@@ -13,7 +13,8 @@ const MESES = [
 
 async function carregarDashboard() {
   try {
-    const data = await apiFetch('/api/evolucao/dashboard');
+    const resposta = await apiFetch('/api/evolucao/dashboard');
+    const data = await resposta.json();
     dadosDashboard = data;
 
     // Stats
