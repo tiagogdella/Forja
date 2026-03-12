@@ -17,8 +17,8 @@ async function carregarDashboard() {
     dadosDashboard = data;
 
     // Stats
-    document.getElementById('stat-streak').textContent = data.streak_atual;
-    document.getElementById('stat-total').textContent = data.total_treinos;
+    document.getElementById('stat-streak').textContent = data.streak_atual ?? 0;
+    document.getElementById('stat-total').textContent = data.total_treinos ?? 0;
     document.getElementById('stat-volume').textContent =
       data.volume_total_geral ? Math.round(data.volume_total_geral).toLocaleString('pt-BR') : '0';
 
@@ -43,9 +43,9 @@ function renderizarCalendario(ano, mes) {
   // Mapa de dias treinados neste mês
   const prefixo = `${String(ano).padStart(4, '0')}-${String(mes + 1).padStart(2, '0')}`;
   const diasTreinados = {};
-  if (dadosDashboard) {
+  if (dadosDashboard && Array.isArray(dadosDashboard.dias_treinados)) {
     dadosDashboard.dias_treinados.forEach(d => {
-      if (d.dia.startsWith(prefixo)) {
+      if (d && d.dia && d.dia.startsWith(prefixo)) {
         const dia = parseInt(d.dia.split('-')[2], 10);
         diasTreinados[dia] = d.treinos;
       }
