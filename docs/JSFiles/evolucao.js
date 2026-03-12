@@ -5,7 +5,6 @@
 let dadosDashboard = null;
 let anoAtual = new Date().getFullYear();
 let mesAtual = new Date().getMonth(); // 0-indexed
-let graficoInstance = null;
 
 const MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -26,7 +25,7 @@ async function carregarDashboard() {
     // Calendário
     renderizarCalendario(anoAtual, mesAtual);
 
-    // Gráfico
+    // Gráfico SVG
     renderizarGrafico(data.volume_historico);
   } catch (err) {
     showError('Erro ao carregar dados de evolução: ' + err.message);
@@ -42,7 +41,7 @@ function renderizarCalendario(ano, mes) {
   const hoje = new Date().toISOString().split('T')[0];
 
   // Mapa de dias treinados neste mês
-  const prefixo = `${String(ano).padStart(4,'0')}-${String(mes + 1).padStart(2,'0')}`;
+  const prefixo = `${String(ano).padStart(4, '0')}-${String(mes + 1).padStart(2, '0')}`;
   const diasTreinados = {};
   if (dadosDashboard) {
     dadosDashboard.dias_treinados.forEach(d => {
@@ -53,10 +52,9 @@ function renderizarCalendario(ano, mes) {
     });
   }
 
-  // Primeiro dia da semana (0=Dom ... 6=Sáb). Ajustar para Seg=0
-  const primeiroDia = new Date(ano, mes, 1).getDay(); // 0=Dom
-  const offsetSeg = (primeiroDia === 0) ? 6 : primeiroDia - 1; // Seg=0, Dom=6
-
+  // Primeiro dia da semana — ajustar para Seg=0, Dom=6
+  const primeiroDia = new Date(ano, mes, 1).getDay();
+  const offsetSeg = primeiroDia === 0 ? 6 : primeiroDia - 1;
   const diasNoMes = new Date(ano, mes + 1, 0).getDate();
 
   // Células vazias antes do dia 1
@@ -72,7 +70,7 @@ function renderizarCalendario(ano, mes) {
     cell.className = 'cal-dia';
     cell.textContent = d;
 
-    const dataStr = `${String(ano).padStart(4,'0')}-${String(mes + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dataStr = `${String(ano).padStart(4, '0')}-${String(mes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
     if (diasTreinados[d]) {
       cell.classList.add('dia-treinado');
@@ -85,75 +83,90 @@ function renderizarCalendario(ano, mes) {
     cal.appendChild(cell);
   }
 
-  // Contagem de dias treinados no mês
   document.getElementById('dias-no-mes').textContent = Object.keys(diasTreinados).length;
 }
 
 function renderizarGrafico(volumeHistorico) {
-  const ctx = document.getElementById('grafico-volume').getContext('2d');
+  const container = document.getElementById('grafico-container');
 
   if (!volumeHistorico || volumeHistorico.length === 0) {
-    document.getElementById('grafico-container').style.display = 'none';
+    container.style.display = 'none';
     document.getElementById('grafico-vazio').style.display = 'block';
     return;
   }
 
-  if (graficoInstance) {
-    graficoInstance.destroy();
-  }
+  const W = container.clientWidth || 320;
+  const H = container.clientHeight || 240;
+  const PAD = { top: 12, right: 14, bottom: 52, left: 60 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top - PAD.bottom;
 
-  const labels = volumeHistorico.map(d => {
-    const partes = d.dia.split('-');
-    return `${partes[2]}/${partes[1]}`;
-  });
-  const valores = volumeHistorico.map(d => d.volume_dia);
+  const n = volumeHistorico.length;
+  const values = volumeHistorico.map(d => d.volume_dia);
+  const maxV = Math.max(...values);
+  const scale = maxV > 0 ? maxV * 1.1 : 1;
 
-  graficoInstance = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: 'Volume (kg)',
-        data: valores,
-        borderColor: '#00ff41',
-        backgroundColor: 'rgba(0, 255, 65, 0.08)',
-        borderWidth: 2,
-        pointBackgroundColor: '#00ff41',
-        pointRadius: 4,
-        pointHoverRadius: 6,
-        tension: 0.3,
-        fill: true
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          labels: { color: '#00ff41', font: { family: 'monospace' } }
-        },
-        tooltip: {
-          callbacks: {
-            label: ctx => ` ${Math.round(ctx.raw).toLocaleString('pt-BR')} kg`
-          }
-        }
-      },
-      scales: {
-        x: {
-          ticks: { color: '#00ff4199', font: { family: 'monospace', size: 11 }, maxRotation: 45 },
-          grid: { color: 'rgba(0, 255, 65, 0.08)' }
-        },
-        y: {
-          ticks: {
-            color: '#00ff4199',
-            font: { family: 'monospace', size: 11 },
-            callback: v => Math.round(v).toLocaleString('pt-BR')
-          },
-          grid: { color: 'rgba(0, 255, 65, 0.08)' }
-        }
-      }
-    }
+  // Mapear pontos para coordenadas SVG
+  const pts = volumeHistorico.map((d, i) => {
+    const x = PAD.left + (n === 1 ? cW / 2 : (i / (n - 1)) * cW);
+    const y = PAD.top + cH - (d.volume_dia / scale) * cH;
+    return { x, y, label: d.dia.slice(5).replace('-', '/'), value: d.volume_dia };
   });
+
+  const baseY = PAD.top + cH;
+  const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const fillPath = linePath
+    + ` L${pts[pts.length - 1].x.toFixed(1)},${baseY} L${PAD.left},${baseY} Z`;
+
+  // Eixo Y: 4 divisões
+  const yTicks = [0, 1, 2, 3, 4].map(i => ({
+    y: PAD.top + cH - (i / 4) * cH,
+    v: Math.round(scale * (i / 4))
+  }));
+
+  // Eixo X: máximo 5 labels espaçadas
+  const maxXLabels = Math.min(n, 5);
+  const xIdxs = new Set(
+    Array.from({ length: maxXLabels }, (_, i) =>
+      Math.round(i * (n - 1) / (maxXLabels > 1 ? maxXLabels - 1 : 1))
+    )
+  );
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" style="overflow:visible;display:block">
+    <defs>
+      <linearGradient id="vGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#00ff41" stop-opacity="0.18"/>
+        <stop offset="100%" stop-color="#00ff41" stop-opacity="0.01"/>
+      </linearGradient>
+    </defs>
+
+    ${yTicks.map(t =>
+      `<line x1="${PAD.left}" y1="${t.y.toFixed(1)}" x2="${W - PAD.right}" y2="${t.y.toFixed(1)}" stroke="#00ff4118" stroke-width="1"/>`
+    ).join('')}
+
+    <path d="${fillPath}" fill="url(#vGrad)"/>
+    <path d="${linePath}" fill="none" stroke="#00ff41" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+
+    ${pts.map(p =>
+      `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" fill="#00ff41" stroke="#0d0d0d" stroke-width="1.5">
+        <title>${p.label}: ${Math.round(p.value).toLocaleString('pt-BR')} kg</title>
+      </circle>`
+    ).join('')}
+
+    ${yTicks.map(t =>
+      `<text x="${PAD.left - 6}" y="${(t.y + 4).toFixed(1)}" text-anchor="end" font-size="10" fill="#00ff4199" font-family="monospace">${t.v.toLocaleString('pt-BR')}</text>`
+    ).join('')}
+
+    ${pts.filter((_, i) => xIdxs.has(i)).map(p =>
+      `<text x="${p.x.toFixed(1)}" y="${(baseY + 14).toFixed(1)}" text-anchor="end" font-size="10" fill="#00ff4199" font-family="monospace"
+        transform="rotate(-40,${p.x.toFixed(1)},${(baseY + 14).toFixed(1)})">${p.label}</text>`
+    ).join('')}
+
+    <line x1="${PAD.left}" y1="${PAD.top}" x2="${PAD.left}" y2="${baseY}" stroke="#00ff4140" stroke-width="1"/>
+    <line x1="${PAD.left}" y1="${baseY}" x2="${W - PAD.right}" y2="${baseY}" stroke="#00ff4140" stroke-width="1"/>
+  </svg>`;
+
+  container.innerHTML = svg;
 }
 
 // Navegação de meses
