@@ -2,7 +2,8 @@
 <html lang="pt-br">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Hackeando seu treino">
@@ -10,75 +11,98 @@
   <link rel="stylesheet" href="./style.css">
   <link rel="apple-touch-icon" href="IMG/apple-touch-icon.png">
   <style>
+    /* Safe areas para iPhone (notch / Dynamic Island / home bar) */
+    body {
+      padding-bottom: env(safe-area-inset-bottom, 16px);
+    }
+    .navbar {
+      padding-top: env(safe-area-inset-top, 0);
+    }
+
+    /* Cards de estatísticas */
+    .stat-card {
+      border: 1px solid #00ff4133;
+      background-color: #0a0a0a;
+      border-radius: 8px;
+      padding: 0.9rem 0.5rem;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: clamp(1.2rem, 5.5vw, 2rem);
+      font-weight: bold;
+      color: #00ff41;
+      font-family: monospace;
+      line-height: 1.2;
+      word-break: break-all;
+    }
+    .stat-label {
+      font-size: clamp(0.6rem, 2.5vw, 0.75rem);
+      color: #00ff4199;
+      font-family: monospace;
+      margin-top: 4px;
+    }
+
+    /* Calendário */
     .calendario-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
+      gap: 3px;
       font-family: monospace;
     }
     .cal-header {
       text-align: center;
-      font-size: 0.75rem;
+      font-size: clamp(0.6rem, 2.8vw, 0.75rem);
       color: #00ff4199;
       padding: 4px 0;
       font-weight: bold;
     }
     .cal-dia {
       text-align: center;
-      padding: 6px 2px;
-      font-size: 0.85rem;
-      border-radius: 4px;
-      min-height: 32px;
-      line-height: 1;
+      font-size: clamp(0.75rem, 3.5vw, 0.9rem);
+      border-radius: 6px;
+      /* Mínimo 44px de touch target para iOS */
+      min-height: 44px;
       display: flex;
       align-items: center;
       justify-content: center;
-    }
-    .cal-dia-vazio {
-      /* espaço vazio antes do primeiro dia */
+      cursor: default;
+      -webkit-tap-highlight-color: transparent;
     }
     .dia-treinado {
       background-color: rgba(0, 255, 65, 0.2);
       border: 1px solid #00ff41;
       color: #00ff41;
       font-weight: bold;
-      cursor: default;
     }
     .dia-hoje {
-      border: 1px solid rgba(255,255,255,0.3);
+      border: 1px solid rgba(255, 255, 255, 0.35);
     }
     .dia-treinado.dia-hoje {
       border: 2px solid #00ff41;
       background-color: rgba(0, 255, 65, 0.3);
     }
-    .stat-card {
-      border: 1px solid #00ff4133;
-      background-color: #0a0a0a;
-      border-radius: 6px;
-      padding: 1.2rem;
-      text-align: center;
+
+    /* Botões de navegação de mês — touch target mínimo */
+    .btn-nav-mes {
+      min-height: 44px;
+      min-width: 80px;
+      font-size: 0.85rem;
     }
-    .stat-value {
-      font-size: 1.8rem;
-      font-weight: bold;
-      color: #00ff41;
-      font-family: monospace;
-    }
-    .stat-label {
-      font-size: 0.75rem;
-      color: #00ff4199;
-      font-family: monospace;
-    }
+
+    /* Gráfico */
     #grafico-container {
       position: relative;
-      height: 260px;
+      height: 240px;
+    }
+    @media (min-width: 576px) {
+      #grafico-container { height: 300px; }
     }
   </style>
 </head>
 <body>
   <nav class="navbar navbar-dark">
     <div class="container position-relative">
-      <button onclick="Auth.logout()" class="btn btn-sm btn-outline-danger terminal-command position-absolute end-0 top-50 translate-middle-y" style="z-index: 10;">
+      <button onclick="Auth.logout()" class="btn btn-sm btn-outline-danger terminal-command position-absolute end-0 top-50 translate-middle-y" style="z-index: 10; min-height: 44px;">
         logout
       </button>
       <div class="w-100 text-center">
@@ -109,40 +133,40 @@
     </div>
   </nav>
 
-  <div class="container my-4">
-    <h2 class="text-center mb-4 terminal-command">Dashboard de Evolução</h2>
+  <div class="container my-4 px-3">
+    <h2 class="text-center mb-4 terminal-command" style="font-size: clamp(1rem, 5vw, 1.5rem);">Dashboard de Evolução</h2>
 
     <!-- Cards de estatísticas -->
-    <div class="row g-3 mb-5" id="stats-cards">
+    <div class="row g-2 mb-4" id="stats-cards">
       <div class="col-4">
         <div class="stat-card">
           <div class="stat-value" id="stat-streak">--</div>
-          <div class="stat-label">streak_atual (dias)</div>
+          <div class="stat-label">streak</div>
         </div>
       </div>
       <div class="col-4">
         <div class="stat-card">
           <div class="stat-value" id="stat-total">--</div>
-          <div class="stat-label">total_treinos</div>
+          <div class="stat-label">treinos</div>
         </div>
       </div>
       <div class="col-4">
         <div class="stat-card">
-          <div class="stat-value" id="stat-volume" style="font-size:1.2rem;">--</div>
-          <div class="stat-label">volume_acumulado (kg)</div>
+          <div class="stat-value" id="stat-volume">--</div>
+          <div class="stat-label">vol. total (kg)</div>
         </div>
       </div>
     </div>
 
     <!-- Calendário -->
     <div class="mb-5">
-      <h5 class="terminal-command mb-3">Calendário de Treinos</h5>
-      <div class="d-flex align-items-center justify-content-between mb-3">
-        <button class="btn btn-sm btn-outline-success terminal-command" id="btn-prev">&lt; prev</button>
-        <span class="terminal-prompt fw-bold" id="label-mes" style="font-size:1rem;"></span>
-        <button class="btn btn-sm btn-outline-success terminal-command" id="btn-next">next &gt;</button>
+      <h5 class="terminal-command mb-3" style="font-size: clamp(0.85rem, 4vw, 1.1rem);">Calendário de Treinos</h5>
+      <div class="d-flex align-items-center justify-content-between mb-3 gap-2">
+        <button class="btn btn-outline-success terminal-command btn-nav-mes" id="btn-prev">&lt; prev</button>
+        <span class="terminal-prompt fw-bold text-center" id="label-mes" style="font-size: clamp(0.85rem, 4vw, 1rem);"></span>
+        <button class="btn btn-outline-success terminal-command btn-nav-mes" id="btn-next">next &gt;</button>
       </div>
-      <div class="calendario-grid mb-2" id="cal-headers">
+      <div class="calendario-grid mb-1" id="cal-headers">
         <div class="cal-header">Seg</div>
         <div class="cal-header">Ter</div>
         <div class="cal-header">Qua</div>
@@ -152,25 +176,28 @@
         <div class="cal-header">Dom</div>
       </div>
       <div class="calendario-grid" id="calendario"></div>
-      <p class="text-end mt-2" style="font-size:0.8rem; color:#00ff4199;">
-        Dias treinados: <span id="dias-no-mes" class="text-success fw-bold">0</span>
+      <p class="text-end mt-2 mb-0" style="font-size: 0.8rem; color: #00ff4199;">
+        Treinado: <span id="dias-no-mes" class="text-success fw-bold">0</span> dias
       </p>
     </div>
 
     <!-- Gráfico de volume -->
     <div class="mb-5">
-      <h5 class="terminal-command mb-3">Volume Total Acumulado <span style="font-size:0.75rem; color:#00ff4199;">(últimos 90 dias)</span></h5>
+      <h5 class="terminal-command mb-1" style="font-size: clamp(0.85rem, 4vw, 1.1rem);">Volume Total Acumulado</h5>
+      <p style="font-size: 0.75rem; color: #00ff4199;" class="mb-3">últimos 90 dias</p>
       <div id="grafico-container">
         <canvas id="grafico-volume"></canvas>
       </div>
-      <p id="grafico-vazio" class="text-center" style="color:#00ff4199; font-size:0.85rem; display:none;">
+      <p id="grafico-vazio" class="text-center mt-3" style="color: #00ff4199; font-size: 0.85rem; display: none;">
         Nenhum treino finalizado nos últimos 90 dias.
       </p>
     </div>
 
     <!-- Voltar -->
     <div class="text-center mb-5">
-      <a href="index.html" class="btn btn-outline-secondary terminal-command">&lt; voltar_para_treinos</a>
+      <a href="index.html" class="btn btn-outline-secondary terminal-command" style="min-height: 44px; display: inline-flex; align-items: center;">
+        &lt; voltar_para_treinos
+      </a>
     </div>
   </div>
 
