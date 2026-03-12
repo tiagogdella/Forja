@@ -421,6 +421,71 @@ app.get("/api/treinos/:id/progressao", requireAuth, (req, res) => {
 });
 
 /* =========================
+   EVOLUÇÃO / DASHBOARD
+========================= */
+
+app.get("/api/evolucao/dashboard", requireAuth, (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    // 1. Todos os dias treinados (para calendário + streak)
+    const diasTreinados = db.prepare(`
+      SELECT DATE(data_execucao) as dia, GROUP_CONCAT(t.nome) as treinos
+      FROM execucoes_treino et
+      JOIN treinos t ON t.id = et.treino_id
+      WHERE et.user_id = ? AND et.volume_total IS NOT NULL
+      GROUP BY DATE(data_execucao)
+      ORDER BY dia ASC
+    `).all(userId);
+
+    // 2. Volume por dia (últimos 90 dias para o gráfico)
+    const volumeHistorico = db.prepare(`
+      SELECT DATE(data_execucao) as dia, ROUND(SUM(volume_total), 2) as volume_dia
+      FROM execucoes_treino
+      WHERE user_id = ? AND volume_total IS NOT NULL
+        AND data_execucao >= date('now', '-90 days')
+      GROUP BY DATE(data_execucao)
+      ORDER BY dia ASC
+    `).all(userId);
+
+    // 3. Total de treinos executados
+    const { total_treinos } = db.prepare(
+      `SELECT COUNT(*) as total_treinos FROM execucoes_treino WHERE user_id = ? AND volume_total IS NOT NULL`
+    ).get(userId);
+
+    // 4. Volume total acumulado
+    const { volume_total_geral } = db.prepare(
+      `SELECT ROUND(SUM(volume_total), 2) as volume_total_geral FROM execucoes_treino WHERE user_id = ? AND volume_total IS NOT NULL`
+    ).get(userId);
+
+    // 5. Calcular streak atual (dias consecutivos com treino)
+    const setDias = new Set(diasTreinados.map(d => d.dia));
+    let streakAtual = 0;
+    let checkDate = new Date();
+    const hoje = checkDate.toISOString().split('T')[0];
+    if (!setDias.has(hoje)) {
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+    while (true) {
+      const dateStr = checkDate.toISOString().split('T')[0];
+      if (!setDias.has(dateStr)) break;
+      streakAtual++;
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+
+    res.json({
+      dias_treinados: diasTreinados,
+      volume_historico: volumeHistorico,
+      streak_atual: streakAtual,
+      total_treinos: total_treinos || 0,
+      volume_total_geral: volume_total_geral || 0
+    });
+  } catch (erro) {
+    res.status(500).json({ erro: erro.message });
+  }
+});
+
+/* =========================
    EXERCÍCIOS
 ========================= */
 
