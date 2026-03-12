@@ -429,22 +429,24 @@ app.get("/api/evolucao/dashboard", requireAuth, (req, res) => {
 
   try {
     // 1. Todos os dias treinados (para calendário + streak)
+    // substr(data_execucao, 1, 10) extrai YYYY-MM-DD diretamente do ISO string
+    // evitando problemas de parsing do DATE() com o formato 'Z' do JS
     const diasTreinados = db.prepare(`
-      SELECT DATE(data_execucao) as dia, GROUP_CONCAT(t.nome) as treinos
+      SELECT substr(data_execucao, 1, 10) as dia, GROUP_CONCAT(t.nome) as treinos
       FROM execucoes_treino et
       JOIN treinos t ON t.id = et.treino_id
       WHERE et.user_id = ? AND et.volume_total IS NOT NULL
-      GROUP BY DATE(data_execucao)
+      GROUP BY substr(data_execucao, 1, 10)
       ORDER BY dia ASC
     `).all(userId);
 
     // 2. Volume por dia (últimos 90 dias para o gráfico)
     const volumeHistorico = db.prepare(`
-      SELECT DATE(data_execucao) as dia, ROUND(SUM(volume_total), 2) as volume_dia
+      SELECT substr(data_execucao, 1, 10) as dia, ROUND(SUM(volume_total), 2) as volume_dia
       FROM execucoes_treino
       WHERE user_id = ? AND volume_total IS NOT NULL
-        AND data_execucao >= date('now', '-90 days')
-      GROUP BY DATE(data_execucao)
+        AND substr(data_execucao, 1, 10) >= date('now', '-90 days')
+      GROUP BY substr(data_execucao, 1, 10)
       ORDER BY dia ASC
     `).all(userId);
 
@@ -453,10 +455,25 @@ app.get("/api/evolucao/dashboard", requireAuth, (req, res) => {
       `SELECT COUNT(*) as total_treinos FROM execucoes_treino WHERE user_id = ? AND volume_total IS NOT NULL`
     ).get(userId);
 
-    // 4. Volume total acumulado
-    const { volume_total_geral } = db.prepare(
-      `SELECT ROUND(SUM(volume_total), 2) as volume_total_geral FROM execucoes_treino WHERE user_id = ? AND volume_total IS NOT NULL`
-    ).get(userId);
+    // 4. Progressão média (%) entre primeira e última execução de cada treino
+    const progressoPorTreino = db.prepare(`
+      SELECT
+        treino_id,
+        (SELECT volume_total FROM execucoes_treino WHERE treino_id = e.treino_id AND user_id = ? AND volume_total IS NOT NULL ORDER BY data_execucao ASC  LIMIT 1) as vol_base,
+        (SELECT volume_total FROM execucoes_treino WHERE treino_id = e.treino_id AND user_id = ? AND volume_total IS NOT NULL ORDER BY data_execucao DESC LIMIT 1) as vol_atual
+      FROM execucoes_treino e
+      WHERE e.user_id = ? AND e.volume_total IS NOT NULL
+      GROUP BY treino_id
+      HAVING COUNT(*) >= 2 AND vol_base > 0 AND vol_base != vol_atual
+    `).all(userId, userId, userId);
+
+    let progressaoMedia = null;
+    if (progressoPorTreino.length > 0) {
+      const soma = progressoPorTreino.reduce(
+        (acc, p) => acc + ((p.vol_atual - p.vol_base) / p.vol_base * 100), 0
+      );
+      progressaoMedia = parseFloat((soma / progressoPorTreino.length).toFixed(1));
+    }
 
     // 5. Calcular streak atual (dias consecutivos com treino)
     const setDias = new Set(diasTreinados.map(d => d.dia));
@@ -478,7 +495,7 @@ app.get("/api/evolucao/dashboard", requireAuth, (req, res) => {
       volume_historico: volumeHistorico,
       streak_atual: streakAtual,
       total_treinos: total_treinos || 0,
-      volume_total_geral: volume_total_geral || 0
+      progressao_media: progressaoMedia
     });
   } catch (erro) {
     res.status(500).json({ erro: erro.message });

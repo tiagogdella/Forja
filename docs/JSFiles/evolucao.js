@@ -20,8 +20,10 @@ async function carregarDashboard() {
     // Stats
     document.getElementById('stat-streak').textContent = data.streak_atual ?? 0;
     document.getElementById('stat-total').textContent = data.total_treinos ?? 0;
-    document.getElementById('stat-volume').textContent =
-      data.volume_total_geral ? Math.round(data.volume_total_geral).toLocaleString('pt-BR') : '0';
+
+    const prog = data.progressao_media;
+    document.getElementById('stat-progressao').textContent =
+      prog != null ? `${prog >= 0 ? '+' : ''}${prog}%` : '--';
 
     // Calendário
     renderizarCalendario(anoAtual, mesAtual);
