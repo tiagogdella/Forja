@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import bcrypt from 'bcryptjs';
-import db from '../../DB/db.js';
+import db, { initDB } from '../../DB/db.js';
 import readline from 'readline';
 
 const rl = readline.createInterface({
@@ -21,11 +21,12 @@ async function criarUsuario() {
   console.log('╚══════════════════════════════════════╝\n');
 
   try {
+    await initDB();
+
     const username = await question('Username (mínimo 3 caracteres): ');
     const nomeCompleto = await question('Nome completo (opcional): ');
     const password = await question('Senha (mínimo 6 caracteres): ');
 
-    // Validações
     if (username.length < 3) {
       console.error('❌ Erro: Username deve ter no mínimo 3 caracteres');
       process.exit(1);
@@ -36,8 +37,7 @@ async function criarUsuario() {
       process.exit(1);
     }
 
-    // Verifica duplicação
-    const existente = db.prepare(
+    const existente = await db.prepare(
       'SELECT id FROM usuarios WHERE username = ? COLLATE NOCASE'
     ).get(username);
 
@@ -46,11 +46,9 @@ async function criarUsuario() {
       process.exit(1);
     }
 
-    // Hash da senha
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Insere usuário
-    const result = db.prepare(`
+    const result = await db.prepare(`
       INSERT INTO usuarios (username, password_hash, nome_completo, data_criacao, ativo)
       VALUES (?, ?, ?, ?, 1)
     `).run(username, passwordHash, nomeCompleto || null, new Date().toISOString());

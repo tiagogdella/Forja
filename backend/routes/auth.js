@@ -14,7 +14,7 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    const usuario = db.prepare(
+    const usuario = await db.prepare(
       'SELECT * FROM usuarios WHERE username = ? COLLATE NOCASE AND ativo = 1'
     ).get(username);
 
@@ -27,11 +27,9 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ erro: 'Usuário ou senha inválidos' });
     }
 
-    // Atualiza último login
-    db.prepare('UPDATE usuarios SET ultimo_login = ? WHERE id = ?')
+    await db.prepare('UPDATE usuarios SET ultimo_login = ? WHERE id = ?')
       .run(new Date().toISOString(), usuario.id);
 
-    // Cria sessão
     req.session.userId = usuario.id;
     req.session.username = usuario.username;
 

@@ -1,7 +1,7 @@
 import db from '../../DB/db.js';
 
 // Protege rotas - requer login
-export function requireAuth(req, res, next) {
+export async function requireAuth(req, res, next) {
   if (!req.session || !req.session.userId) {
     return res.status(401).json({
       erro: 'Não autenticado',
@@ -10,7 +10,7 @@ export function requireAuth(req, res, next) {
   }
 
   try {
-    const usuario = db.prepare(
+    const usuario = await db.prepare(
       'SELECT id, username, nome_completo FROM usuarios WHERE id = ? AND ativo = 1'
     ).get(req.session.userId);
 
@@ -22,7 +22,7 @@ export function requireAuth(req, res, next) {
       });
     }
 
-    req.user = usuario; // Adiciona ao request
+    req.user = usuario;
     next();
   } catch (erro) {
     return res.status(500).json({ erro: 'Erro ao verificar autenticação' });
@@ -30,16 +30,14 @@ export function requireAuth(req, res, next) {
 }
 
 // Verifica auth sem bloquear (para rotas opcionais)
-export function checkAuth(req, res, next) {
+export async function checkAuth(req, res, next) {
   if (req.session && req.session.userId) {
     try {
-      const usuario = db.prepare(
+      const usuario = await db.prepare(
         'SELECT id, username, nome_completo FROM usuarios WHERE id = ? AND ativo = 1'
       ).get(req.session.userId);
       if (usuario) req.user = usuario;
-    } catch (erro) {
-      // Silenciosamente ignora erros de auth opcional
-    }
+    } catch (_) {}
   }
   next();
 }

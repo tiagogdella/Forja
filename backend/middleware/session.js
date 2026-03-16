@@ -1,25 +1,20 @@
 import session from 'express-session';
-import ConnectSqlite3 from 'connect-sqlite3';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import memorystore from 'memorystore';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const SQLiteStore = ConnectSqlite3(session);
+const MemoryStore = memorystore(session);
 
 export const sessionMiddleware = session({
-  store: new SQLiteStore({
-    db: 'sessions.db',
-    dir: path.join(__dirname, '../../DB')
+  store: new MemoryStore({
+    checkPeriod: 86400000 // limpa sessões expiradas a cada 24h
   }),
-  secret: 'hackeando-seu-treino-secret-2026', // TODO: mover para .env em produção
+  secret: process.env.SESSION_SECRET || 'hackeando-seu-treino-secret-2026',
   resave: false,
   saveUninitialized: false,
-  proxy: true,           // Confia no proxy do Render (HTTPS)
+  proxy: true,
   cookie: {
-    httpOnly: true,      // Previne XSS
-    secure: true,        // Obrigatório com sameSite 'none'
-    sameSite: 'none',    // Permite cookies cross-origin (GitHub Pages → Render)
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
     maxAge: 1000 * 60 * 60 * 24 * 7 // 7 dias
   },
   name: 'sessionId'
