@@ -1,5 +1,11 @@
 import { createClient } from "@libsql/client";
 
+if (!process.env.TURSO_URL || !process.env.TURSO_AUTH_TOKEN) {
+  console.error("❌ Variáveis de ambiente TURSO_URL e TURSO_AUTH_TOKEN são obrigatórias.");
+  console.error("   Configure-as no painel do Render em: Environment > Add Environment Variable");
+  process.exit(1);
+}
+
 const client = createClient({
   url: process.env.TURSO_URL,
   authToken: process.env.TURSO_AUTH_TOKEN,

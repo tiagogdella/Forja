@@ -7,3 +7,8 @@ node_modules/
 # Claude
 claude.md
 .claude/
+
+# DB
+DB/database.db
+DB/sessions.db
+.env
