@@ -16,7 +16,9 @@ function toObj(row, columns) {
   if (!row) return null;
   const obj = {};
   for (let i = 0; i < columns.length; i++) {
-    obj[columns[i]] = row[i];
+    const col = columns[i];
+    // Tenta acesso por nome primeiro (mais confiável), depois por índice
+    obj[col] = col in row ? row[col] : row[i];
   }
   return obj;
 }
