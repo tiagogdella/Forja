@@ -92,6 +92,27 @@ app.get("/api/treinos/:id", requireAuth, async (req, res) => {
   res.json({ ...treino, exercicios });
 });
 
+app.patch("/api/treinos/:id", requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const { nome } = req.body;
+
+  if (!nome || nome.trim() === "") {
+    return res.status(400).json({ erro: "Nome do treino é obrigatório" });
+  }
+
+  try {
+    const treino = await db.prepare("SELECT id FROM treinos WHERE id = ? AND user_id = ?").get(id, req.user.id);
+    if (!treino) {
+      return res.status(404).json({ erro: "Treino não encontrado" });
+    }
+
+    await db.prepare("UPDATE treinos SET nome = ? WHERE id = ?").run(nome.trim(), id);
+    res.json({ sucesso: true, nome: nome.trim() });
+  } catch (erro) {
+    res.status(500).json({ erro: erro.message });
+  }
+});
+
 app.delete("/api/treinos/:id", requireAuth, async (req, res) => {
   const { id } = req.params;
 

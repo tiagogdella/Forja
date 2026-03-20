@@ -48,6 +48,9 @@ function renderizarTreinos() {
             <button class="btn btn-primary btn-sm terminal-command flex-grow-1" onclick="abrirTreino(${treino.id})">
               treinar
             </button>
+            <button class="btn btn-outline-warning btn-sm terminal-command" onclick="renomearTreino(${treino.id}, '${treino.nome.replace(/'/g, "\\'")}')">
+              ~
+            </button>
             <button class="btn btn-danger btn-sm terminal-command" onclick="excluirTreino(${treino.id}, '${treino.nome.replace(/'/g, "\\'")}')">
               X
             </button>
@@ -63,6 +66,31 @@ function abrirTreino(treinoId) {
   // salva apenas o ID
   localStorage.setItem("treinoSelecionado", treinoId);
   window.location.href = "treino.html";
+}
+
+async function renomearTreino(treinoId, nomeAtual) {
+  const novoNome = prompt(`Novo nome para "${nomeAtual}":`, nomeAtual);
+
+  if (!novoNome || novoNome.trim() === '' || novoNome.trim() === nomeAtual) return;
+
+  try {
+    const resposta = await apiFetch(`/api/treinos/${treinoId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ nome: novoNome.trim() })
+    });
+
+    const dados = await resposta.json();
+
+    if (!resposta.ok) {
+      window.Terminal.showError(dados.erro || 'Erro ao renomear treino');
+      return;
+    }
+
+    window.Terminal.showSuccess(`Treino renomeado para "${dados.nome}"`);
+    carregarTreinos();
+  } catch (erro) {
+    window.Terminal.showError('Erro ao renomear treino: ' + erro.message);
+  }
 }
 
 async function excluirTreino(treinoId, treinoNome) {
