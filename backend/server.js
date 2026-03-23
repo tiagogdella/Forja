@@ -61,7 +61,7 @@ app.get("/api/treinos", requireAuth, async (req, res) => {
       t.id,
       t.nome,
       t.data_criacao,
-      COUNT(DISTINCT e.id) as total_execucoes
+      COUNT(DISTINCT CASE WHEN e.volume_total IS NOT NULL THEN e.id END) as total_execucoes
     FROM treinos t
     LEFT JOIN execucoes_treino e ON e.treino_id = t.id
     WHERE t.user_id = ?
@@ -336,7 +336,7 @@ app.get("/api/treinos/:id/progressao", requireAuth, async (req, res) => {
     const execucoes = await db.prepare(`
       SELECT id, data_execucao, volume_total
       FROM execucoes_treino
-      WHERE treino_id = ? AND user_id = ?
+      WHERE treino_id = ? AND user_id = ? AND volume_total IS NOT NULL
       ORDER BY data_execucao ASC
     `).all(id, req.user.id);
 
