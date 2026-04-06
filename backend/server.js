@@ -290,24 +290,6 @@ app.post("/api/execucoes/:id/finalizar", requireAuth, async (req, res) => {
   }
 });
 
-app.get("/api/treinos/:id/historico", requireAuth, async (req, res) => {
-  const { id } = req.params;
-
-  const execucoes = await db.prepare(`
-    SELECT
-      e.id,
-      e.data_execucao,
-      e.volume_total,
-      COUNT(s.id) as total_series
-    FROM execucoes_treino e
-    LEFT JOIN series s ON s.execucao_id = e.id
-    WHERE e.treino_id = ? AND e.user_id = ?
-    GROUP BY e.id
-    ORDER BY e.data_execucao DESC
-  `).all(id, req.user.id);
-
-  res.json(execucoes);
-});
 
 app.get("/api/execucoes/:id", requireAuth, async (req, res) => {
   const { id } = req.params;
@@ -480,14 +462,6 @@ app.get("/api/evolucao/dashboard", requireAuth, async (req, res) => {
   }
 });
 
-/* =========================
-   EXERCÍCIOS
-========================= */
-
-app.get("/api/exercicios", requireAuth, async (_req, res) => {
-  const exercicios = await db.prepare("SELECT * FROM exercicios ORDER BY nome").all();
-  res.json(exercicios);
-});
 
 /* =========================
    SERVIDOR

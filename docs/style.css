@@ -105,31 +105,14 @@ body > * {
   }
 }
 
-/* Barra Decorativa SVG */
-.barbell-divider {
-  text-align: center;
-  margin-top: 15px;
-  margin-bottom: 10px;
-}
-
-.barbell-svg {
-  width: 100%;
-  max-width: 500px;
-  height: auto;
-  color: var(--terminal-green);
-  filter: drop-shadow(0 0 8px var(--terminal-green-glow));
-  transition: all 0.3s ease;
-}
-
-.barbell-svg:hover {
-  filter: drop-shadow(0 0 15px var(--terminal-green-glow));
-  transform: scale(1.05);
-}
-
-@media (max-width: 768px) {
-  .barbell-svg {
-    max-width: 350px;
-  }
+/* Logo no Header */
+.app-icon-header {
+  display: block;
+  margin: 1px auto;
+  width: 75%;
+  height: 180px;
+  object-fit: cover;
+  object-position: center 35%;
 }
 
 /* Cards Terminal */

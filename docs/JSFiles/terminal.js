@@ -6,9 +6,6 @@
 // Container para logs (criado dinamicamente)
 let logsContainer = null;
 
-/**
- * Inicializa o container de logs no DOM
- */
 function initLogsContainer() {
   if (!logsContainer) {
     logsContainer = document.createElement('div');
@@ -59,11 +56,9 @@ function typeWriter(element, text, speed = 50) {
 function showLog(message, type = 'info', duration = 3000) {
   initLogsContainer();
 
-  // Criar elemento de log
   const logElement = document.createElement('div');
   logElement.className = `terminal-log-message ${type}`;
 
-  // Adicionar timestamp
   const now = new Date();
   const time = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
@@ -72,10 +67,8 @@ function showLog(message, type = 'info', duration = 3000) {
     <span class="log-text">> ${message}</span>
   `;
 
-  // Adicionar ao container
   logsContainer.appendChild(logElement);
 
-  // Remover após duration
   setTimeout(() => {
     logElement.style.opacity = '0';
     setTimeout(() => {
@@ -86,88 +79,19 @@ function showLog(message, type = 'info', duration = 3000) {
   }, duration);
 }
 
-/**
- * Aplica efeito typewriter em elementos com classe 'typewriter'
- * Útil para aplicar em múltiplos elementos de uma vez
- */
-function applyTypewriterToAll() {
-  const elements = document.querySelectorAll('.typewriter');
-  elements.forEach((el, index) => {
-    const text = el.textContent;
-    // Delay para cada elemento (stagger effect)
-    setTimeout(() => {
-      typeWriter(el, text, 30);
-    }, index * 100);
-  });
-}
-
-/**
- * Substitui alert() nativo por showLog
- * Útil para migrar código existente
- * @param {string} message - Mensagem do alert
- */
-function terminalAlert(message) {
-  showLog(message, 'info', 4000);
-}
-
-/**
- * Exibe mensagem de sucesso
- * @param {string} message - Mensagem de sucesso
- */
 function showSuccess(message) {
   showLog(message, 'success', 3000);
 }
 
-/**
- * Exibe mensagem de erro
- * @param {string} message - Mensagem de erro
- */
 function showError(message) {
   showLog(message, 'error', 4000);
 }
 
-/**
- * Adiciona prefixo de comando terminal ($) a um elemento
- * @param {string} selector - Seletor CSS do elemento
- */
-function addCommandPrefix(selector) {
-  const element = document.querySelector(selector);
-  if (element && !element.classList.contains('terminal-command')) {
-    element.classList.add('terminal-command');
-  }
-}
-
-/**
- * Adiciona prefixo de prompt terminal (>) a um elemento
- * @param {string} selector - Seletor CSS do elemento
- */
-function addPromptPrefix(selector) {
-  const element = document.querySelector(selector);
-  if (element && !element.classList.contains('terminal-prompt')) {
-    element.classList.add('terminal-prompt');
-  }
-}
-
-/**
- * Inicializa efeitos de terminal na página
- * Deve ser chamado quando o DOM estiver pronto
- */
-function initTerminalEffects() {
-  // Aplicar typewriter em elementos marcados
-  applyTypewriterToAll();
-
-  // Inicializar container de logs
-  initLogsContainer();
-
-  // Log de inicialização (comentado por padrão)
-  // showLog('Sistema inicializado', 'success', 2000);
-}
-
 // Auto-inicializar quando DOM estiver pronto
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initTerminalEffects);
+  document.addEventListener('DOMContentLoaded', initLogsContainer);
 } else {
-  initTerminalEffects();
+  initLogsContainer();
 }
 
 // Exportar funções para uso global (window)
@@ -176,9 +100,4 @@ window.Terminal = {
   showLog,
   showSuccess,
   showError,
-  terminalAlert,
-  addCommandPrefix,
-  addPromptPrefix,
-  applyTypewriterToAll,
-  initTerminalEffects
 };
