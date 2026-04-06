@@ -115,6 +115,12 @@ body > * {
   object-position: center 35%;
 }
 
+@media (min-width: 768px) {
+  .app-icon-header {
+    width: 220px;
+  }
+}
+
 /* Cards Terminal */
 .card {
   background-color: var(--bg-card);
