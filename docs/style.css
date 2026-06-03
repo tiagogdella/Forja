@@ -56,6 +56,15 @@ body::before {
   opacity: 0.3;
 }
 
+/* Safe areas para iPhone (notch / Dynamic Island / home bar) */
+body {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+.navbar {
+  padding-top: env(safe-area-inset-top, 0);
+}
+
 /* Garante que o conteúdo fique acima das scanlines */
 body > * {
   position: relative;
@@ -146,6 +155,20 @@ body > * {
   color: var(--terminal-green-dark);
 }
 
+.fundoDivLogin{
+  background-color: #000000;
+  border-radius: 50px;
+  margin-top: 100px;
+  margin-bottom: 50px;
+  height: 580px;
+}
+
+@media (min-width: 768px) {
+  .fundoDivLogin {
+    margin-top: 150px;
+    margin-bottom: 50px;
+  }
+}
 
 /* Botões Terminal */
 .btn {

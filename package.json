@@ -6,6 +6,9 @@
   "main": "main.js",
   "scripts": {
     "start": "node backend/server.js",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "test": "echo \"Error: no test specified\" && exit 1",
     "create-user": "node backend/utils/createUser.js"
   },
@@ -26,6 +29,13 @@
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
-    "memorystore": "^1.6.7"
+    "memorystore": "^1.6.7",
+    "pinia": "^3.0.4",
+    "vue": "^3.5.34",
+    "vue-router": "^5.0.7"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.7",
+    "vite": "^8.0.14"
   }
 }
