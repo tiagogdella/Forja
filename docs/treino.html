@@ -12,6 +12,9 @@
   <link rel="apple-touch-icon" href="IMG/apple-touch-icon.png">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
+
+  <!-- [VUE 1] Importa Vue 3 pelo CDN — sem instalação, sem build tool -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
 </head>
 <body>
   <nav class="navbar navbar-dark">
@@ -25,7 +28,13 @@
   </nav>
 
   <div class="container my-4">
+    <!--
+      [VUE 2] Ponto de montagem do app Vue.
+      Tudo dentro desta div é controlado pelo Vue — ele vai substituir
+      o conteúdo estático pelo template reativo definido no JS abaixo.
+    -->
     <div id="exercicios"></div>
+
     <button class="btn btn-success mt-4 terminal-command" id="btnFinalizar">finalizar_treino</button>
   </div>
 
@@ -33,57 +42,275 @@
   <script src="JSFiles/config.js"></script>
   <script src="JSFiles/auth.js"></script>
   <script>
+    // =========================================================
+    // [VUE 3] createApp — cria o app Vue com:
+    //   data()    → estado reativo (as "variáveis" da tela)
+    //   watch     → observa mudanças nos dados e reage
+    //   methods   → funções disponíveis no template e no JS externo
+    //   template  → o HTML que Vue vai renderizar dentro de #exercicios
+    // =========================================================
+    const vueApp = Vue.createApp({
+
+      // ---------------------------------------------------------
+      // [VUE 4] data() — o coração do Vue.
+      // Cada propriedade aqui é REATIVA: quando você muda um valor,
+      // Vue atualiza a tela automaticamente. Sem getElementById,
+      // sem innerHTML. Você só muda os dados.
+      // ---------------------------------------------------------
+      data() {
+        return {
+          treino: null,
+          ultimoTreino: null,
+
+          // Um objeto por exercício:
+          // { numSeries: 3, series: [{peso: '80', reps: '15'}, ...] }
+          exerciciosState: []
+        }
+      },
+
+      // ---------------------------------------------------------
+      // [VUE 5] watch — observa uma propriedade e executa código
+      // quando ela (ou algo dentro dela) muda.
+      // deep: true → rastreia mudanças em objetos/arrays aninhados.
+      // Aqui usamos para auto-salvar sempre que qualquer input mudar,
+      // sem precisar colocar oninput em cada campo manualmente.
+      // ---------------------------------------------------------
+      watch: {
+        exerciciosState: {
+          deep: true,
+          handler() {
+            salvarEstadoLocal();
+          }
+        }
+      },
+
+      methods: {
+        // Chamado pelo JS externo após buscar treino + ultimoTreino da API
+        inicializar(treino, ultimoTreino) {
+          this.treino = treino;
+          this.ultimoTreino = ultimoTreino;
+
+          // Constrói o estado inicial para cada exercício
+          this.exerciciosState = treino.exercicios.map(ex => {
+            let dadosUltimo = null;
+            if (ultimoTreino.existe) {
+              dadosUltimo = ultimoTreino.series_por_exercicio.find(s => s.exercicio_id === ex.id);
+            }
+
+            const numSeries = dadosUltimo ? dadosUltimo.series.length : 3;
+
+            const series = Array.from({ length: numSeries }, (_, s) => ({
+              peso: dadosUltimo?.series[s] ? String(dadosUltimo.series[s].peso) : '',
+              reps: dadosUltimo?.series[s] ? String(dadosUltimo.series[s].repeticoes) : ''
+            }));
+
+            return { numSeries, series };
+          });
+        },
+
+        // Sincroniza o array de series quando numSeries muda
+        ajustarSeries(i) {
+          const exState = this.exerciciosState[i];
+          const ex = this.treino.exercicios[i];
+
+          let dadosUltimo = null;
+          if (this.ultimoTreino.existe) {
+            dadosUltimo = this.ultimoTreino.series_por_exercicio.find(s => s.exercicio_id === ex.id);
+          }
+
+          const target = exState.numSeries;
+          const atual = exState.series.length;
+
+          if (target > atual) {
+            // Adiciona séries novas (Vue 3 detecta push reativamente)
+            for (let s = atual; s < target; s++) {
+              exState.series.push({
+                peso: dadosUltimo?.series[s] ? String(dadosUltimo.series[s].peso) : '',
+                reps: dadosUltimo?.series[s] ? String(dadosUltimo.series[s].repeticoes) : ''
+              });
+            }
+          } else {
+            // Remove séries excedentes (splice também é reativo)
+            exState.series.splice(target);
+          }
+        },
+
+        // ---------------------------------------------------------
+        // [VUE 6] Métodos auxiliares usados no template com {{ }} e :attr
+        // ---------------------------------------------------------
+        emojiTipo(i) {
+          return this.treino.exercicios[i].tipo === 'isometrico' ? '⏱️' : '🏋️';
+        },
+
+        labelUnidade(i) {
+          return this.treino.exercicios[i].tipo === 'isometrico' ? 'Segundos' : 'Repetições';
+        },
+
+        placeholderPeso(i, s) {
+          const ex = this.treino.exercicios[i];
+          if (this.ultimoTreino.existe) {
+            const d = this.ultimoTreino.series_por_exercicio.find(d => d.exercicio_id === ex.id);
+            if (d?.series[s]) return String(d.series[s].peso);
+          }
+          return '80';
+        },
+
+        placeholderReps(i, s) {
+          const ex = this.treino.exercicios[i];
+          if (this.ultimoTreino.existe) {
+            const d = this.ultimoTreino.series_por_exercicio.find(d => d.exercicio_id === ex.id);
+            if (d?.series[s]) return String(d.series[s].repeticoes);
+          }
+          return ex.tipo === 'isometrico' ? '30' : '10';
+        },
+
+        // ---------------------------------------------------------
+        // [VUE 7] A feature nova: média de reps por exercício.
+        // Calcula em tempo real a partir do estado reativo —
+        // sem tocar no DOM, sem getElementById.
+        // ---------------------------------------------------------
+        mediaReps(i) {
+          const preenchidas = this.exerciciosState[i].series.filter(s => s.reps !== '' && Number(s.reps) > 0);
+          if (preenchidas.length === 0) return null;
+          const soma = preenchidas.reduce((acc, s) => acc + Number(s.reps), 0);
+          return (soma / preenchidas.length).toFixed(1);
+        },
+
+        // Exporta estado para o JS externo (salvar e finalizar)
+        getEstado() {
+          return this.exerciciosState.map(ex => ({
+            numSeries: ex.numSeries,
+            series: ex.series.map(s => ({ peso: s.peso, reps: s.reps }))
+          }));
+        },
+
+        // Restaura estado salvo no localStorage
+        restaurarEstado(estado) {
+          if (!estado.exercicios || estado.exercicios.length !== this.exerciciosState.length) return;
+          estado.exercicios.forEach((exDados, i) => {
+            if (!exDados) return;
+            this.exerciciosState[i].numSeries = exDados.numSeries;
+            this.exerciciosState[i].series = exDados.series.map(s => ({ peso: s.peso, reps: s.reps }));
+          });
+          window.Terminal.showLog('Treino restaurado — continue de onde parou!', 'info');
+        }
+      },
+
+      // ---------------------------------------------------------
+      // [VUE 8] template — o HTML reativo do app.
+      //
+      // Diretivas principais usadas aqui:
+      //   v-for       → loop (substitui forEach + innerHTML)
+      //   v-model     → two-way binding: input ↔ dado (lê E escreve)
+      //   v-model.number → converte para número automaticamente
+      //   v-if        → renderiza só se condição for true
+      //   :attr       → bind dinâmico de atributo (: é atalho de v-bind)
+      //   @event      → listener de evento (@ é atalho de v-on)
+      //   {{ expr }}  → interpolação: exibe valor do dado/método
+      // ---------------------------------------------------------
+      template: `
+        <div
+          v-for="(exState, i) in exerciciosState"
+          :key="i"
+          class="card p-3 mb-3 shadow-sm"
+        >
+          <h5 class="mb-3">{{ emojiTipo(i) }} {{ treino.exercicios[i].nome }}</h5>
+
+          <div class="mb-2">
+            <label class="form-label fw-semibold terminal-prompt">Número de séries</label>
+            <!--
+              v-model.number → two-way binding com conversão automática para número.
+              @change        → chama ajustarSeries quando o valor muda.
+            -->
+            <input
+              type="number"
+              v-model.number="exState.numSeries"
+              @change="ajustarSeries(i)"
+              class="form-control"
+              min="1"
+              max="15">
+          </div>
+
+          <!--
+            v-for aninhado → itera as séries de cada exercício.
+            :key="s" → identificador único para o Vue rastrear cada item.
+          -->
+          <div
+            v-for="(serie, s) in exState.series"
+            :key="s"
+            class="row mb-2"
+          >
+            <div class="col">
+              <label class="form-label terminal-prompt">S{{ s + 1 }} Peso (kg)</label>
+              <!--
+                v-model → conecta diretamente este input à propriedade
+                serie.peso no estado. Qualquer digitação atualiza o dado,
+                qualquer mudança no dado atualiza o input.
+                :placeholder → valor dinâmico via método.
+              -->
+              <input
+                type="number"
+                v-model="serie.peso"
+                min="0"
+                step="0.5"
+                class="form-control"
+                :placeholder="placeholderPeso(i, s)">
+            </div>
+            <div class="col">
+              <label class="form-label terminal-prompt">{{ labelUnidade(i) }}</label>
+              <input
+                type="number"
+                v-model="serie.reps"
+                min="1"
+                class="form-control"
+                :placeholder="placeholderReps(i, s)">
+            </div>
+          </div>
+
+          <!--
+            v-if → só aparece quando há reps preenchidas.
+            mediaReps(i) recalcula automaticamente a cada digitação
+            porque lê exerciciosState, que é reativo.
+          -->
+          <div v-if="mediaReps(i) !== null" class="mt-2 small terminal-prompt">
+            Média de {{ labelUnidade(i).toLowerCase() }}:
+            <strong>{{ mediaReps(i) }}</strong>
+          </div>
+        </div>
+      `
+
+    // [VUE 9] mount('#exercicios') — conecta o app ao elemento do HTML.
+    // A partir daqui Vue controla tudo dentro de #exercicios.
+    }).mount('#exercicios');
+
+
+    // =========================================================
+    // JS externo — cuida de API, auth, localStorage.
+    // Lê/escreve estado via vueApp ao invés de getElementById.
+    // =========================================================
+
     let treinoId = null;
     let execucaoId = null;
     let treino = null;
     let ultimoTreino = null;
-
-    // === PERSISTÊNCIA LOCAL ===
 
     function salvarEstadoLocal() {
       if (!treino || !treinoId || !execucaoId) return;
       const estado = {
         execucaoId,
         timestamp: Date.now(),
-        exercicios: treino.exercicios.map((ex, i) => {
-          const numSeriesEl = document.getElementById(`numSeries-${i}`);
-          if (!numSeriesEl) return null;
-          const numSeries = parseInt(numSeriesEl.value);
-          const series = [];
-          for (let s = 0; s < numSeries; s++) {
-            const pesoEl = document.getElementById(`peso-${i}-${s}`);
-            const repsEl = document.getElementById(`reps-${i}-${s}`);
-            series.push({ peso: pesoEl ? pesoEl.value : '', reps: repsEl ? repsEl.value : '' });
-          }
-          return { numSeries, series };
-        })
+        // Lê estado do Vue em vez de varrer o DOM com getElementById
+        exercicios: vueApp.getEstado()
       };
       localStorage.setItem(`treino_estado_${treinoId}`, JSON.stringify(estado));
     }
 
     function restaurarEstadoLocal(estado) {
-      if (!treino || !estado.exercicios) return;
-      if (estado.exercicios.length !== treino.exercicios.length) return;
-      estado.exercicios.forEach((exDados, i) => {
-        if (!exDados) return;
-        const numSeriesEl = document.getElementById(`numSeries-${i}`);
-        if (!numSeriesEl) return;
-        if (parseInt(numSeriesEl.value) !== exDados.numSeries) {
-          numSeriesEl.value = exDados.numSeries;
-          gerarInputsSeries(i);
-        }
-        exDados.series.forEach((serie, s) => {
-          const pesoEl = document.getElementById(`peso-${i}-${s}`);
-          const repsEl = document.getElementById(`reps-${i}-${s}`);
-          if (pesoEl && serie.peso !== '') pesoEl.value = serie.peso;
-          if (repsEl && serie.reps !== '') repsEl.value = serie.reps;
-        });
-      });
-      window.Terminal.showLog('Treino restaurado — continue de onde parou!', 'info');
+      // Delega ao Vue — ele atualiza os dados, tela reflete sozinha
+      vueApp.restaurarEstado(estado);
     }
 
     function iniciarKeepalive() {
-      // Ping a cada 8 minutos para manter sessão e backend acordado
       setInterval(async () => {
         try {
           const res = await apiFetch('/api/auth/status');
@@ -92,29 +319,23 @@
             window.Terminal.showError('Sessão expirada. Redirecionando...');
             setTimeout(() => { window.location.href = 'login.html'; }, 2000);
           }
-        } catch (e) { /* ignora erro de rede, tenta novamente no próximo ciclo */ }
+        } catch (e) { /* ignora erro de rede */ }
       }, 8 * 60 * 1000);
 
-      // Auto-save a cada 30 segundos
       setInterval(salvarEstadoLocal, 30 * 1000);
     }
 
-    // Salva antes de sair da página (reload, fechar aba, etc.)
     window.addEventListener('beforeunload', salvarEstadoLocal);
 
-    // Carrega treino e inicia execução
     async function iniciarTreino() {
       treinoId = localStorage.getItem("treinoSelecionado");
 
       if (!treinoId) {
         window.Terminal.showError("Erro: Nenhum treino selecionado");
-        setTimeout(() => {
-          window.location.href = "index.html";
-        }, 2000);
+        setTimeout(() => { window.location.href = "index.html"; }, 2000);
         return;
       }
 
-      // Verifica se há estado salvo recente (até 6h)
       let estadoSalvo = null;
       const estadoStr = localStorage.getItem(`treino_estado_${treinoId}`);
       if (estadoStr) {
@@ -131,151 +352,40 @@
       }
 
       try {
-        // Busca detalhes do treino
         const resposta = await apiFetch(`/api/treinos/${treinoId}`);
         treino = await resposta.json();
 
         document.getElementById("treinoNome").textContent = treino.nome;
 
-        // Busca dados do último treino completo (se existir)
         const resUltimo = await apiFetch(`/api/treinos/${treinoId}/ultimo`);
         ultimoTreino = await resUltimo.json();
 
-        // Tenta reutilizar execução salva (evita criar várias execuções vazias)
-        if (estadoSalvo && estadoSalvo.execucaoId) {
+        if (estadoSalvo?.execucaoId) {
           try {
             const resExec = await apiFetch(`/api/execucoes/${estadoSalvo.execucaoId}`);
             if (resExec.ok) {
               const dadosExec = await resExec.json();
-              if (dadosExec.volume_total == null) {
-                execucaoId = estadoSalvo.execucaoId;
-              }
+              if (dadosExec.volume_total == null) execucaoId = estadoSalvo.execucaoId;
             }
-          } catch (e) { /* ignora, cria nova execução abaixo */ }
+          } catch (e) { /* cria nova abaixo */ }
         }
 
-        // Cria nova execução apenas se não reutilizou uma existente
         if (!execucaoId) {
-          const resExec = await apiFetch(`/api/treinos/${treinoId}/executar`, {
-            method: "POST"
-          });
+          const resExec = await apiFetch(`/api/treinos/${treinoId}/executar`, { method: "POST" });
           const dadosExec = await resExec.json();
           execucaoId = dadosExec.execucao_id;
         }
 
-        // Renderiza exercícios com dados do último treino completo
-        renderizarExercicios();
+        // Passa os dados para o Vue — ele renderiza tudo
+        vueApp.inicializar(treino, ultimoTreino);
 
-        // Restaura estado salvo por cima (sobrescreve com o que o usuário já tinha digitado)
-        if (estadoSalvo) {
-          restaurarEstadoLocal(estadoSalvo);
-        }
+        if (estadoSalvo) restaurarEstadoLocal(estadoSalvo);
 
         iniciarKeepalive();
 
       } catch (erro) {
         window.Terminal.showError("Erro ao carregar treino: " + erro.message);
-        setTimeout(() => {
-          window.location.href = "index.html";
-        }, 2000);
-      }
-    }
-
-    function renderizarExercicios() {
-      const container = document.getElementById("exercicios");
-      container.innerHTML = "";
-
-      treino.exercicios.forEach((ex, i) => {
-        // Busca dados do último treino para este exercício
-        let dadosUltimo = null;
-        if (ultimoTreino.existe) {
-          dadosUltimo = ultimoTreino.series_por_exercicio.find(s => s.exercicio_id === ex.id);
-        }
-
-        const numSeriesInicial = dadosUltimo ? dadosUltimo.series.length : 3;
-        const isIsometrico = ex.tipo === 'isometrico';
-        const labelUnidade = isIsometrico ? 'Segundos' : 'Repetições';
-        const emojiTipo = isIsometrico ? '⏱️' : '🏋️';
-
-        const bloco = `
-          <div class="card p-3 mb-3 shadow-sm">
-            <h5 class="mb-3">${emojiTipo} ${ex.nome}</h5>
-
-            <div class="mb-2">
-              <label class="form-label fw-semibold terminal-prompt">Número de séries</label>
-              <input
-                type="number"
-                id="numSeries-${i}"
-                class="form-control"
-                min="1"
-                max="15"
-                value="${numSeriesInicial}"
-                onchange="gerarInputsSeries(${i}); salvarEstadoLocal()">
-            </div>
-
-            <div id="seriesContainer-${i}"></div>
-          </div>
-        `;
-        container.innerHTML += bloco;
-
-        // Gera inputs com dados pré-preenchidos
-        gerarInputsSeries(i);
-      });
-    }
-
-    function gerarInputsSeries(exIndex) {
-      const exercicio = treino.exercicios[exIndex];
-      const numSeries = document.getElementById(`numSeries-${exIndex}`).value;
-      const container = document.getElementById(`seriesContainer-${exIndex}`);
-
-      // Busca dados do último treino para este exercício
-      let dadosUltimo = null;
-      if (ultimoTreino.existe) {
-        dadosUltimo = ultimoTreino.series_por_exercicio.find(s => s.exercicio_id === exercicio.id);
-      }
-
-      const isIsometrico = exercicio.tipo === 'isometrico';
-      const labelUnidade = isIsometrico ? 'Segundos' : 'Repetições';
-
-      container.innerHTML = "";
-
-      for (let s = 0; s < numSeries; s++) {
-        // Pré-preenche com dados do último treino (se existir)
-        let pesoAnterior = "";
-        let repsAnterior = "";
-
-        if (dadosUltimo && dadosUltimo.series[s]) {
-          pesoAnterior = dadosUltimo.series[s].peso;
-          repsAnterior = dadosUltimo.series[s].repeticoes;
-        }
-
-        container.innerHTML += `
-          <div class="row mb-2">
-            <div class="col">
-              <label class="form-label terminal-prompt">S${s + 1} Peso (kg)</label>
-              <input
-                type="number"
-                id="peso-${exIndex}-${s}"
-                class="form-control"
-                min="0"
-                step="0.5"
-                value="${pesoAnterior}"
-                placeholder="${pesoAnterior || '80'}"
-                oninput="salvarEstadoLocal()">
-            </div>
-            <div class="col">
-              <label class="form-label terminal-prompt">${labelUnidade}</label>
-              <input
-                type="number"
-                id="reps-${exIndex}-${s}"
-                class="form-control"
-                min="1"
-                value="${repsAnterior}"
-                placeholder="${repsAnterior || (isIsometrico ? '30' : '10')}"
-                oninput="salvarEstadoLocal()">
-            </div>
-          </div>
-        `;
+        setTimeout(() => { window.location.href = "index.html"; }, 2000);
       }
     }
 
@@ -290,27 +400,25 @@
       btnFinalizar.textContent = "$ salvando...";
 
       try {
-        // Coleta dados de todas as séries
+        // Lê estado do Vue (sem tocar no DOM)
+        const estadoAtual = vueApp.getEstado();
         let ordemGlobal = 1;
 
         for (let i = 0; i < treino.exercicios.length; i++) {
           const exercicio = treino.exercicios[i];
-          const numSeries = document.getElementById(`numSeries-${i}`).value;
+          const { numSeries, series } = estadoAtual[i];
 
           for (let s = 0; s < numSeries; s++) {
-            const peso = document.getElementById(`peso-${i}-${s}`).value;
-            const reps = document.getElementById(`reps-${i}-${s}`).value;
+            const { peso, reps } = series[s];
 
             if (!peso || !reps) {
-              const isIsometrico = exercicio.tipo === 'isometrico';
-              const unidade = isIsometrico ? 'segundos' : 'reps';
+              const unidade = exercicio.tipo === 'isometrico' ? 'segundos' : 'reps';
               window.Terminal.showError(`Preencha peso e ${unidade} da série ${s + 1} do exercício ${exercicio.nome}`);
               btnFinalizar.disabled = false;
               btnFinalizar.textContent = "finalizar_treino";
               return;
             }
 
-            // Salva série na API
             await apiFetch(`/api/execucoes/${execucaoId}/series`, {
               method: "POST",
               body: JSON.stringify({
@@ -325,20 +433,13 @@
           }
         }
 
-        // Finaliza execução (calcula volume)
-        const resFinal = await apiFetch(`/api/execucoes/${execucaoId}/finalizar`, {
-          method: "POST"
-        });
-
+        const resFinal = await apiFetch(`/api/execucoes/${execucaoId}/finalizar`, { method: "POST" });
         const resultado = await resFinal.json();
 
-        // Busca progressão
         const resProgressao = await apiFetch(`/api/treinos/${treinoId}/progressao`);
         const progressao = await resProgressao.json();
 
-        // Mostra resultado
         let mensagem = `Treino finalizado! Volume: ${resultado.volume_total.toFixed(2)}kg`;
-
         if (progressao.progresso_percentual !== null) {
           const sinal = progressao.progresso_percentual >= 0 ? "+" : "";
           mensagem += ` | Progressão: ${sinal}${progressao.progresso_percentual.toFixed(2)}%`;
@@ -347,23 +448,19 @@
         localStorage.removeItem(`treino_estado_${treinoId}`);
         window.Terminal.showSuccess(mensagem);
 
-        // Mostra deltas individuais se houver
-        if (progressao.delta_reps_por_exercicio && progressao.delta_reps_por_exercicio.length > 0) {
+        if (progressao.delta_reps_por_exercicio?.length > 0) {
           progressao.delta_reps_por_exercicio.forEach(item => {
             const ex = treino.exercicios.find(e => e.nome === item.exercicio_nome);
-            const unidade = ex && ex.tipo === 'isometrico' ? 'seg' : 'reps';
+            const unidade = ex?.tipo === 'isometrico' ? 'seg' : 'reps';
             const sinal = item.delta_reps > 0 ? '+' : '';
             const tipo = item.delta_reps >= 0 ? 'success' : 'info';
-
             setTimeout(() => {
               window.Terminal.showLog(`${item.exercicio_nome}: ${sinal}${item.delta_reps} ${unidade}`, tipo);
             }, 500);
           });
         }
 
-        setTimeout(() => {
-          window.location.href = "index.html";
-        }, 3000);
+        setTimeout(() => { window.location.href = "index.html"; }, 3000);
 
       } catch (erro) {
         window.Terminal.showError("Erro ao finalizar treino: " + erro.message);
@@ -372,10 +469,7 @@
       }
     }
 
-    // Event listeners
     document.getElementById("btnFinalizar").addEventListener("click", finalizarTreino);
-
-    // Inicia ao carregar página
     iniciarTreino();
   </script>
 </body>
