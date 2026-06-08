@@ -3,8 +3,8 @@ import vue from '@vitejs/plugin-vue'
 import {fileURLToPath} from 'node:url'
 
 export default defineConfig({
-    plugins: [vue()],
-
+     plugins: [vue()],
+     base: './',
      optimizeDeps: {
      entries: ['index.html']
     },
@@ -25,7 +25,8 @@ export default defineConfig({
     },
 
     build: {
-        outDir: 'dist'
+        outDir: 'docs',
+        emptyOutDir: true
     }
 
 })

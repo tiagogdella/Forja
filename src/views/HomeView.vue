@@ -69,7 +69,7 @@
         <router-link to="/cadastro" class="btn btn-primary terminal-command">
             Novo treino
         </router-link>
-        <router-link to="/cadastro" class="btn btn-outline-success terminal-command">
+        <router-link to="/evolucao" class="btn btn-outline-success terminal-command">
             Ver evolução
         </router-link>
     </div>
