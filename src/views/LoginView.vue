@@ -2,7 +2,7 @@
     <div class="container">
         <div class="row justify-content-center align-itens-center" style="min-height: 100vh;">
             <div class="col-md-5 fundoDivLogin">
-                <img src="/docs/IMG/apple-touch-icon.png" alt="Hackeando seu Treino" class="app-icon-header">
+                <img src="/IMG/apple-touch-icon.png" alt="Hackeando seu Treino" class="app-icon-header">
                 <div class="card p-4 shadow-lg">
 
                     <pre class="ascii-logo text-center mb-3">╦ ╦┌─┐┌─┐┬┌─┌─┐┌─┐┌┐┌┌┬┐┌─┐  ┌─┐┌─┐┬ ┬  ╔╦╗┬─┐┌─┐┬┌┐┌┌─┐

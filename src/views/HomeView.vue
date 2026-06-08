@@ -24,12 +24,12 @@
 
         <div v-else class="row g-4">
             <div class="col-md-4" v-for="treino in treinosOrdenados" :key="treino.id">
-                <div :class="['card p-3 text-center shadow', ativos.includes(treino.id) ? 'card-ativo' : 'card-inativo']">
+                <div :class="['card p-3 text-center shadow', treino.ativo ? 'card-ativo' : 'card-inativo']">
                 
                   <!-- Toggle no topo do card -->
                   <div class="d-flex justify-content-end mb-2">
-                    <div class="toggle-switch" @click="toggleAtivo(treino.id)">
-                      <div :class="['toggle-track', ativos.includes(treino.id) ? 'on' : '']">
+                    <div class="toggle-switch" @click="toggleAtivo(treino)">
+                      <div :class="['toggle-track', treino.ativo ? 'on' : '']">
                         <div class="toggle-thumb"></div>
                       </div>
                     </div>
@@ -104,18 +104,14 @@ export default {
     data() {
         return {
             treinos: [],
-            ativos: JSON.parse(localStorage.getItem('treinos_ativos') || '[]')
         }
     },
 
     computed: {
         treinosOrdenados() {
-            return  [...this.treinos].sort((a, b) => {
-                const aAtivo = this.ativos.includes(a.id)
-                const bAtivo = this.ativos.includes(b.id)
-                return bAtivo - aAtivo
-            })
-        }
+            return  [...this.treinos].sort((a, b) => b.ativo - a.ativo)
+            }
+        
     },
 
     async mounted() {
@@ -163,7 +159,7 @@ export default {
                     this.showError(dados.erro || 'Erro ao renomear')
                     return
                 }
-                this.showSucccess(`Treino renomeado para "${dados.nome}"`)
+                this.showSuccess(`Treino renomeado para "${dados.nome}"`)
                 await this.carregarTreinos()
             } catch (e) {
                 this.showError('Erro ao renomear: ' + e.message)
@@ -192,14 +188,13 @@ export default {
             this.$router.push('/login')
         },
 
-        toggleAtivo(id) {
-            if (this.ativos.includes(id)) {
-                this.ativos = this.ativos.filter(a => a !== id)
-            } else {
-                this.ativos.push(id)
-            }
-            localStorage.setItem('treinos_ativos', JSON.stringify(this.ativos))
-        }
+        async toggleAtivo(treino) {
+           treino.ativo = treino.ativo ? 0 : 1
+             await apiFetch(`/api/treinos/${treino.id}/ativo`, {
+               method: 'PATCH',
+               body: JSON.stringify({ ativo: treino.ativo })
+             })
+        },
     }
 }
 </script>

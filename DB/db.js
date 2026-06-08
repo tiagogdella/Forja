@@ -109,6 +109,7 @@ export async function initDB() {
     'ALTER TABLE execucoes_treino ADD COLUMN user_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE',
     'CREATE INDEX IF NOT EXISTS idx_treinos_user ON treinos(user_id)',
     'CREATE INDEX IF NOT EXISTS idx_execucoes_user ON execucoes_treino(user_id)',
+    'ALTER TABLE treinos ADD COLUMN ativo INTENGER NOT NULL DEFAULT 0',
   ];
 
   for (const sql of migrations) {

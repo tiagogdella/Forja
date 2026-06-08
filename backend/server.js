@@ -19,6 +19,13 @@ app.use('/api/auth', authRoutes);
 /* =========================
    TREINOS (Templates)
 ========================= */
+app.patch('/api/treinos/:id/ativo', requireAuth, async (req, res) => {
+  const { ativo } = req.body
+  await db.prepare(
+    'UPDATE treinos SET ativo = ? WHERE id = ? AND user_id = ?'
+  ).run(ativo ? 1 : 0, req.params.id, req.user.id)
+  res.json({ ok: true })
+})
 
 app.post("/api/treinos", requireAuth, async (req, res) => {
   const { nome, exercicios } = req.body;
