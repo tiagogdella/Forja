@@ -68,6 +68,7 @@ app.get("/api/treinos", requireAuth, async (req, res) => {
       t.id,
       t.nome,
       t.data_criacao,
+      t.ativo,
       COUNT(DISTINCT CASE WHEN e.volume_total IS NOT NULL THEN e.id END) as total_execucoes
     FROM treinos t
     LEFT JOIN execucoes_treino e ON e.treino_id = t.id
