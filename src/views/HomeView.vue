@@ -23,10 +23,18 @@
         </div>
 
         <div v-else class="row g-4">
-            <div class="col-md-4" v-for="treino in treinos" :key="treino.id">
-                <div class="card p-3 text-center shadow">
-                    <h5 class="mb-3">{{ treino.nome }}</h5>
-                    
+            <div class="col-md-4" v-for="treino in treinosOrdenados" :key="treino.id">
+                <div :class="['card p-3 text-center shadow', ativos.includes(treino.id) ? 'card-ativo' : 'card-inativo']">
+                
+                  <!-- Toggle no topo do card -->
+                  <div class="d-flex justify-content-end mb-2">
+                    <div class="toggle-switch" @click="toggleAtivo(treino.id)">
+                      <div :class="['toggle-track', ativos.includes(treino.id) ? 'on' : '']">
+                        <div class="toggle-thumb"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <h5 class="mb-3">{{  treino.nome }}</h5>
                     <p v-if="treino.total_execucoes === 0"
                         class="mb-3"
                         style="font-size: 0.82rem; color: var(--terminal-green-dark);">
@@ -95,7 +103,18 @@ export default {
 
     data() {
         return {
-            treinos: []
+            treinos: [],
+            ativos: JSON.parse(localStorage.getItem('treinos_ativos') || '[]')
+        }
+    },
+
+    computed: {
+        treinosOrdenados() {
+            return  [...this.treinos].sort((a, b) => {
+                const aAtivo = this.ativos.includes(a.id)
+                const bAtivo = this.ativos.includes(b.id)
+                return bAtivo - aAtivo
+            })
         }
     },
 
@@ -171,7 +190,61 @@ export default {
             const auth = useAuthStore()
             await auth.logout()
             this.$router.push('/login')
+        },
+
+        toggleAtivo(id) {
+            if (this.ativos.includes(id)) {
+                this.ativos = this.ativos.filter(a => a !== id)
+            } else {
+                this.ativos.push(id)
+            }
+            localStorage.setItem('treinos_ativos', JSON.stringify(this.ativos))
         }
     }
 }
 </script>
+
+<style>
+.card-ativo {
+    border-color: #00ff41;
+    opacity: 1;
+}
+
+.card-inativo{
+    border-color: #333;
+    opacity: 0.5;
+}
+
+.toggle-switch {
+    cursor: pointer;
+}
+
+.toggle-track {
+    width: 42px;
+    height: 24px;
+    background-color: #333;
+    border-radius: 24px;
+    position: relative;
+    transition: background-color 0.25s;
+    border: 1px solid #444;
+}
+.toggle-track.on {
+  background-color: #00ff41;
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  background-color: #fff;
+  border-radius: 50%;
+  transition: transform 0.25s;
+}
+
+.toggle-track.on .toggle-thumb {
+  transform: translateX(18px);
+}
+
+</style>
