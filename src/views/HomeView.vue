@@ -3,7 +3,7 @@
         <div class="container position-relative">
             <button
                 @click="fazerLogout"
-                class="btn btn-sm btn-outline-danger terminal-command position-absolute end-0 top-50 translate-middle-y"
+                class="btn btn-sm btn-outline-danger terminal-command position-absolute end-0 bottom-0 mb-2"
                 style="z-index: 10;">
                 logout
             </button>
