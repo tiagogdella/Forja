@@ -41,8 +41,7 @@
                 v-model="serie.peso"
                 class="form-control"
                 min="0"
-                step="0.5"
-                :placeholder="serie.pesoAnterior || '00'">
+                step="0.5">
             </div>
             <div class="col">
                 <label class="form-label terminal-prompt">
@@ -52,10 +51,10 @@
                 type="number"
                 v-model="serie.reps"
                 class="form-control"
-                min="1"
-                :placeholder="serie.repsAnterior || (ex.isIsometrico ? '30' : '10')">
+                min="1">
             </div>
         </div>
+        <small>Média de reps: {{ mediaReps(ex).toFixed(1) }}</small>
     </div>
 
     <button
@@ -136,8 +135,8 @@ export default {
                 const isIsometrico = ex.tipo === 'isometrico'
 
                 const series = Array.from({ length: numSeries }, (_, s) =>({
-                    peso: '',
-                    reps: '',
+                    peso: dadosUltimo?.series[s]?.peso || '',
+                    reps: dadosUltimo?.series[s]?.repeticoes || '',
                     pesoAnterior: dadosUltimo?.series[s]?.peso || '',
                     repsAnterior: dadosUltimo?.series[s]?.repeticoes || ''
                 }))
@@ -162,6 +161,14 @@ export default {
     },
 
     methods: {
+
+        mediaReps(ex){
+            const comReps = ex.series.filter(s => s.reps !== '')
+            if (comReps.length === 0) return 0
+            const soma = comReps.reduce((acumulador , s) => acumulador + Number(s.reps), 0)
+            return soma / comReps.length
+        },
+
         ajustarSeries(ex){
             const atual = ex.series.length
             const novo = ex.numSeries
