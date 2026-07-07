@@ -14,15 +14,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tiagogdella/TheBook.git"
+    "url": "git+https://github.com/tiagogdella/Forja.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/tiagogdella/TheBook/issues"
+    "url": "https://github.com/tiagogdella/Forja/issues"
   },
-  "homepage": "https://github.com/tiagogdella/TheBook#readme",
+  "homepage": "https://github.com/tiagogdella/Forja#readme",
   "dependencies": {
     "@libsql/client": "^0.14.0",
     "bcryptjs": "^3.0.3",
