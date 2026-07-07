@@ -93,7 +93,9 @@ export default {
             execucaoId: null,
             treino: null,
             exercicios: [],
-            salvando: false
+            salvando: false,
+            localSaveIntervalId: null,
+            heartbeatIntervalId: null
         }
     },
 
@@ -153,7 +155,14 @@ export default {
                 this.showLog('Treino restaurado - continue de onde parou!', 'info')
             }
 
-            setInterval(() => this.salvarEstadoLocal(), 30000)
+            this.localSaveIntervalId = setInterval(() => this.salvarEstadoLocal(), 30000)
+
+            // Mantém o servidor e a conexão com o banco acordados durante o
+            // treino, evitando que o backend hiberne (Render free tier) e o
+            // "Finalizar treino" caia no vazio depois de muito tempo parado.
+            this.heartbeatIntervalId = setInterval(() => {
+                apiFetch('/api/auth/status').catch(() => {})
+            }, 4 * 60 * 1000)
         } catch (e) {
             this.showError('Erro ao carregar treino: ' + e.message)
             setTimeout(() => this.$router.push('/'), 2000)
@@ -161,6 +170,8 @@ export default {
     },
 
     beforeUnmount() {
+        clearInterval(this.localSaveIntervalId)
+        clearInterval(this.heartbeatIntervalId)
         this.salvarEstadoLocal()
     },
 
