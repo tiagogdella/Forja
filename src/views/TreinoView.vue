@@ -1,26 +1,27 @@
 <template>
-   <nav class="navbar navbar-dark">
+ <div class="focus-mode" style="padding-bottom: 96px;">
+   <nav class="navbar">
         <div class="container d-flex justify-content-between align-items-center">
-            <a class="navbar-brand fw-bold" href="#" @click.prevent="$router.push('/')">&lt; voltar</a>
-            <span class="fw-bold terminal-command">{{  treino ? treino.nome : ''}}</span>
-            <button @click="fazerLogout" class="btn btn-sm btn-outline-danger terminal-command">
-                logout
+            <a class="navbar-brand fw-bold" href="#" @click.prevent="$router.push('/')">&lt; Voltar</a>
+            <span class="fw-bold">{{  treino ? treino.nome : ''}}</span>
+            <button @click="fazerLogout" class="btn btn-sm btn-outline-danger">
+                Sair
             </button>
         </div>
    </nav>
 
    <div class="container my-4">
 
-    <div 
+    <div
     v-for="(ex, i) in exercicios"
     :key="ex.id"
-    class="card p-3 mb-3 shadow-sm">
+    class="card p-3 mb-3">
 
         <h5 class="mb-3">{{ ex.isIsometrico ? '⏱️' : '🏋️' }} {{ ex.nome }}</h5>
 
         <div class="mb-2">
-            <label class="form-label fw-semibold terminal-prompt">Número de séries</label>
-            <input 
+            <label class="form-label fw-semibold">Número de séries</label>
+            <input
                 type="number"
                 v-model.number="ex.numSeries"
                 class="form-control"
@@ -29,13 +30,13 @@
                 @change="ajustarSeries(ex)">
         </div>
 
-        <div 
+        <div
         v-for="(serie, s) in ex.series"
         :key="s"
         class="row mb-2">
 
             <div class="col">
-                <label class="form-label terminal-prompt">S{{ s + 1 }} Peso (kg)</label>
+                <label class="form-label">S{{ s + 1 }} Peso (kg)</label>
                 <input
                 type="number"
                 v-model="serie.peso"
@@ -44,7 +45,7 @@
                 step="0.5">
             </div>
             <div class="col">
-                <label class="form-label terminal-prompt">
+                <label class="form-label">
                     {{ ex.isIsometrico ? 'Segundos' : 'Repetições' }}
                 </label>
                 <input
@@ -54,18 +55,21 @@
                 min="1">
             </div>
         </div>
-        <small>Média de reps: {{ mediaReps(ex).toFixed(1) }}</small>
+        <small>Média de reps: <span class="num-highlight">{{ mediaReps(ex).toFixed(1) }}</span></small>
     </div>
+   </div>
 
-    <button
-    class="btn btn-success mt-4 terminal-command"
-    :disabled="salvando"
-    @click="finalizarTreino">
-        {{ salvaldo ? '$ salvando...' : 'finalizar_treino' }}
-    </button>
+   <div class="focus-bottom-bar">
+     <button
+     class="btn btn-primary w-100"
+     :disabled="salvando"
+     @click="finalizarTreino">
+         {{ salvando ? 'Salvando...' : 'Finalizar treino' }}
+     </button>
    </div>
 
    <TerminalLog :logs="logs" />
+ </div>
 </template>
 
 <script>
@@ -74,10 +78,10 @@ import { useAuthStore } from '@/stores/auth'
 import { useTerminal } from '@/composables/useTerminal'
 import TerminalLog from '@/components/TerminalLog.vue'
 
-export default { 
+export default {
     name: 'TreinoView',
     components: { TerminalLog},
-    
+
     setup() {
         const { logs, showSuccess, showError, showLog } = useTerminal()
         return { logs, showSuccess, showError, showLog }
@@ -119,7 +123,7 @@ export default {
                     }
                 } catch (e) {}
             }
-            
+
             if(!this.execucaoId) {
                 const resExec = await apiFetch(`/api/treinos/${this.treinoId}/executar`, { method: 'POST'})
                 const dadosExec = await resExec.json()
@@ -211,7 +215,7 @@ export default {
         restaurarEstado(estado){
             if(!estado.exercicios) return
             estado.exercicios.forEach((exDados, i) => {
-                if(!exDados || !this.exercicios[i]) return 
+                if(!exDados || !this.exercicios[i]) return
                 this.exercicios[i].numSeries = exDados.numSeries
                 this.exercicios[i].series = exDados.series.map((s, si) => ({
                     peso: s.peso,
@@ -223,7 +227,7 @@ export default {
         },
 
         async finalizarTreino() {
-            if(!this.execucaoId) return 
+            if(!this.execucaoId) return
             this.salvando = true
 
             try {
@@ -293,3 +297,22 @@ export default {
     }
 }
 </script>
+
+<style scoped>
+.focus-bottom-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: var(--d-bg);
+    border-top: 1px solid var(--d-line);
+    z-index: 20;
+}
+
+.focus-bottom-bar .btn {
+    max-width: 640px;
+    margin: 0 auto;
+    display: block;
+}
+</style>

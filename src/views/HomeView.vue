@@ -1,33 +1,32 @@
 <template>
-    <nav class="navbar navbar-dark">
-        <div class="container position-relative">
+    <nav class="navbar">
+        <div class="container d-flex justify-content-between align-items-center">
+            <span class="wordmark-group">
+                <img src="/IMG/forja-mark.svg" alt="" class="wordmark-icon">
+                <span class="wordmark">forja.</span>
+            </span>
             <button
                 @click="fazerLogout"
-                class="btn btn-sm btn-outline-danger terminal-command position-absolute end-0 bottom-0 mb-2"
-                style="z-index: 10;">
-                logout
+                class="btn btn-sm btn-outline-danger">
+                Sair
             </button>
-            <div class="w-100 text-center">
-                <pre class="ascii-logo mb-2">╦ ╦┌─┐┌─┐┬┌─┌─┐┌─┐┌┐┌┌┬┐┌─┐  ┌─┐┌─┐┬ ┬  ╔╦╗┬─┐┌─┐┬┌┐┌┌─┐
-╠═╣├─┤│  ├┴┐├┤ ├─┤│││ │││ │  └─┐├┤ │ │   ║ ├┬┘├┤ │││││ │
-╩ ╩┴ ┴└─┘┴ ┴└─┘┴ ┴┘└┘─┴┘└─┘  └─┘└─┘└─┘   ╩ ┴└─└─┘┴┘└┘└─┘</pre>
-            </div>
         </div>
     </nav>
 
     <div class="container my-5">
-        <h2 class="text-center mb-4 terminal-command">Lista de treinos</h2>
+        <h2 class="text-center mb-4">Seus treinos</h2>
 
-        <div v-if="treinos.length === 0" class="text-center" style="color: #00ff4199;">
+        <div v-if="treinos.length === 0" class="text-center" style="color: var(--muted);">
             Nenhum treino cadastrado ainda.
         </div>
 
         <div v-else class="row g-4">
             <div class="col-md-4" v-for="treino in treinosOrdenados" :key="treino.id">
-                <div :class="['card p-3 text-center shadow', treino.ativo ? 'card-ativo' : 'card-inativo']">
-                
+                <div :class="['card p-3 text-center', treino.ativo ? '' : 'card-inativo']">
+
                   <!-- Toggle no topo do card -->
-                  <div class="d-flex justify-content-end mb-2">
+                  <div class="d-flex align-items-center justify-content-end gap-2 mb-2">
+                    <small style="color: var(--muted);">{{ treino.ativo ? 'Ativo' : 'Inativo' }}</small>
                     <div class="toggle-switch" @click="toggleAtivo(treino)">
                       <div :class="['toggle-track', treino.ativo ? 'on' : '']">
                         <div class="toggle-thumb"></div>
@@ -35,37 +34,37 @@
                     </div>
                   </div>
                   <h5 class="mb-3">{{  treino.nome }}</h5>
-                    <p v-if="treino.total_execucoes === 0"
-                        class="mb-3"
-                        style="font-size: 0.82rem; color: var(--terminal-green-dark);">
-                        Ainda não executado
-                    </p>
-                    <p v-else-if="treino.total_execucoes === 1"
-                        class="mb-3"
-                        style="font-size: 0.85rem; color: var(--terminal-green-dark);">
-                        Executado 1x
-                    </p>
-                    <p v-else-if="treino.progressao !== null"
-                        class="mb-2 terminal-command"
-                        style="font-size: 0.85rem;">
-                        Progressive_overload {{ treino.progressao >= 0 ? '+' : ''}}{{ treino.progressao }}%
+
+                    <div class="mb-3">
+                        <span v-if="treino.total_execucoes === 0" class="chip chip-pendente">
+                            Não executado
+                        </span>
+                        <span v-else class="chip chip-executado">
+                            Executado {{ treino.total_execucoes }}×
+                        </span>
+                    </div>
+
+                    <p v-if="treino.total_execucoes > 1 && treino.progressao !== null"
+                        class="mb-2"
+                        style="font-size: 0.85rem; font-family: var(--font-mono); font-weight: 600; color: var(--accent);">
+                        {{ treino.progressao >= 0 ? '+' : ''}}{{ treino.progressao }}%
                     </p>
 
                     <div class="d-flex gap-2 justify-content-center">
                         <button
                             @click="abrirTreino(treino.id)"
-                            class="btn btn-primary btn-sm terminal-command flex-grow-1">
+                            class="btn btn-primary btn-sm flex-grow-1">
                             Treinar
                         </button>
                         <button
                             @click="renomearTreino(treino)"
-                            class="btn btn-outline-warning btn-sm terminal-command">
-                            ~
+                            class="btn btn-outline-secondary btn-sm">
+                            Editar
                         </button>
                         <button
                             @click="excluirTreino(treino)"
-                            class="btn btn-danger btn-sm terminal-command">
-                            x
+                            class="btn btn-outline-danger btn-sm">
+                            Excluir
                         </button>
                     </div>
                 </div>
@@ -74,10 +73,10 @@
     </div>
 
     <div class="container my-5 text-center d-flex gap-3 justify-content-center flex-wrap">
-        <router-link to="/cadastro" class="btn btn-primary terminal-command">
+        <router-link to="/cadastro" class="btn btn-primary">
             Novo treino
         </router-link>
-        <router-link to="/evolucao" class="btn btn-outline-success terminal-command">
+        <router-link to="/evolucao" class="btn btn-outline-secondary">
             Ver evolução
         </router-link>
     </div>
@@ -111,7 +110,7 @@ export default {
         treinosOrdenados() {
             return  [...this.treinos].sort((a, b) => b.ativo - a.ativo)
             }
-        
+
     },
 
     async mounted() {
@@ -148,11 +147,11 @@ export default {
         async renomearTreino(treino){
             const novoNome = prompt(`Novo nome para "${treino.nome}":`, treino.nome)
             if (!novoNome || novoNome.trim() === '' || novoNome.trim() === treino.nome) return
-        
+
             try{
                 const res = await apiFetch(`/api/treinos/${treino.id}`, {
                    method: 'PATCH',
-                   body: JSON.stringify({ nome: novoNome.trim() }) 
+                   body: JSON.stringify({ nome: novoNome.trim() })
                 })
                 const dados = await res.json()
                 if(!res.ok) {
@@ -200,14 +199,8 @@ export default {
 </script>
 
 <style>
-.card-ativo {
-    border-color: #00ff41;
-    opacity: 1;
-}
-
-.card-inativo{
-    border-color: #333;
-    opacity: 0.5;
+.card-inativo {
+    opacity: 0.55;
 }
 
 .toggle-switch {
@@ -217,14 +210,13 @@ export default {
 .toggle-track {
     width: 42px;
     height: 24px;
-    background-color: #333;
+    background-color: var(--line);
     border-radius: 24px;
     position: relative;
     transition: background-color 0.25s;
-    border: 1px solid #444;
 }
 .toggle-track.on {
-  background-color: #00ff41;
+  background-color: var(--accent);
 }
 
 .toggle-thumb {

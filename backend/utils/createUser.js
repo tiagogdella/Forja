@@ -17,7 +17,7 @@ function question(prompt) {
 
 async function criarUsuario() {
   console.log('\n╔══════════════════════════════════════╗');
-  console.log('║  Criar Novo Usuário - Hackeando Treino  ║');
+  console.log('║       Criar Novo Usuário - forja        ║');
   console.log('╚══════════════════════════════════════╝\n');
 
   try {

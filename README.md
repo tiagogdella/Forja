@@ -1,10 +1,10 @@
-# Hackeando seu Treino
+# forja
 
-## 🟢 Sobre o projeto
+## 🟠 Sobre o projeto
 
-**Hackeando seu Treino** é um web app focado em **progressive overload inteligente**. A ideia é simples: acompanhar treinos de forma objetiva, calcular evolução real de força e evitar progressões irreais ou mal interpretadas.
+**forja** — progressive overload, sem enrolação — é um web app focado em **progressive overload inteligente**. A ideia é simples: acompanhar treinos de forma objetiva, calcular evolução real de força e evitar progressões irreais ou mal interpretadas.
 
-O design foi inspirado em **terminais vintage** (preto e verde), trazendo uma estética minimalista, direta e sem distrações — tudo pensado para quem só quer treinar melhor.
+O design é limpo, moderno e caloroso: cinza quente e laranja, com toques de preto, tipografia clara para o dia a dia e números em monoespaçada só onde importa (peso, reps, datas) — nada de estética de terminal.
 
 Esta é a **primeira versão funcional** do app, já utilizável no dia a dia, com melhorias e novas funcionalidades planejadas.
 
@@ -12,7 +12,7 @@ Esta é a **primeira versão funcional** do app, já utilizável no dia a dia, c
 
 ## 🧠 Conceito e lógica
 
-Diferente de apps que analisam apenas carga ou repetições isoladas, o Hackeando seu Treino trabalha com **volume total baseado em força estimada**.
+Diferente de apps que analisam apenas carga ou repetições isoladas, o forja trabalha com **volume total baseado em força estimada**.
 
 ### 🔢 Algoritmo
 
@@ -68,13 +68,13 @@ Funcionalidades futuras planejadas:
 
 ---
 
-# Hackeando seu Treino (English)
+# forja (English)
 
-## 🟢 About the project
+## 🟠 About the project
 
-**Hackeando seu Treino** is a web app focused on **intelligent progressive overload**. The goal is to track workouts objectively, calculate real strength progression, and avoid misleading or unrealistic increases.
+**forja** — progressive overload, no fluff — is a web app focused on **intelligent progressive overload**. The goal is to track workouts objectively, calculate real strength progression, and avoid misleading or unrealistic increases.
 
-The design is inspired by **vintage computer terminals** (black and green), delivering a clean, minimal, no-distraction experience — built for people who just want to train better.
+The design is clean, modern and warm: warm greys and orange, with black accents, friendly typography for everyday text, and monospaced numerals only where it matters (weight, reps, dates) — no terminal aesthetic.
 
 This is the **first functional release**, already usable in real training routines, with continuous improvements planned.
 
@@ -82,7 +82,7 @@ This is the **first functional release**, already usable in real training routin
 
 ## 🧠 Concept & logic
 
-Unlike apps that track only weight or reps, Hackeando seu Treino works with **total volume based on estimated strength**.
+Unlike apps that track only weight or reps, forja works with **total volume based on estimated strength**.
 
 ### 🔢 Algorithm
 

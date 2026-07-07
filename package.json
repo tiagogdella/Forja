@@ -1,8 +1,8 @@
 {
   "type": "module",
-  "name": "thebook",
+  "name": "forja",
   "version": "1.0.0",
-  "description": "App para metrificar Progressive Overload de treinos em geral.",
+  "description": "forja - progressive overload, sem enrolacao.",
   "main": "main.js",
   "scripts": {
     "start": "node backend/server.js",
@@ -36,6 +36,6 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.7",
-    "vite": "^8.0.14"
+    "vite": "^8.0.16"
   }
 }

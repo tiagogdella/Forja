@@ -2,30 +2,28 @@
     <div class="container">
         <div class="row justify-content-center align-itens-center" style="min-height: 100vh;">
             <div class="col-md-5 fundoDivLogin">
-                <img src="/IMG/apple-touch-icon.png" alt="Hackeando seu Treino" class="app-icon-header">
-                <div class="card p-4 shadow-lg">
 
-                    <pre class="ascii-logo text-center mb-3">╦ ╦┌─┐┌─┐┬┌─┌─┐┌─┐┌┐┌┌┬┐┌─┐  ┌─┐┌─┐┬ ┬  ╔╦╗┬─┐┌─┐┬┌┐┌┌─┐
-╠═╣├─┤│  ├┴┐├┤ ├─┤│││ │││ │  └─┐├┤ │ │   ║ ├┬┘├┤ │││││ │
-╩ ╩┴ ┴└─┘┴ ┴└─┘┴ ┴┘└┘─┴┘└─┘  └─┘└─┘└─┘   ╩ ┴└─└─┘┴┘└┘└─┘</pre>
-                    
-            <h3 class="text-center mb-4 terminal-command">$ login</h3>
-                
+                <img src="/IMG/forja-icon-dark.svg" alt="forja" class="app-icon-tile mb-3" width="64" height="64">
+                <h1 class="wordmark text-center mb-1">forja.</h1>
+                <p class="text-center mb-4" style="color: var(--muted);">bora somar mais um disco?</p>
+
+                <div class="card p-4">
+
             <form @submit.prevent="fazerLogin">
 
                 <div class="mb-3">
-                    <label class="form-label terminal-prompt">Username</label>
-                    <input 
+                    <label class="form-label">Usuário</label>
+                    <input
                         type="text"
                         v-model="username"
                         class="form-control"
                         required
                         autocomplete="username"
-                        placeholder="seu_usuario">
+                        placeholder="seu usuário">
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label terminal-prompt">Senha</label>
+                    <label class="form-label">Senha</label>
                     <input
                         type="password"
                         v-model="senha"
@@ -37,9 +35,9 @@
 
                 <button
                     type="submit"
-                    class="btn btn-primary w-100 terminal-command"
+                    class="btn btn-primary w-100"
                     :disabled="carregando">
-                    {{ carregando ?  '$ autenticando...' : 'entrar' }}
+                    {{ carregando ?  'Entrando...' : 'Entrar' }}
                 </button>
             </form>
             </div>
