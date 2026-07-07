@@ -5,12 +5,12 @@
   "description": "forja - progressive overload, sem enrolacao.",
   "main": "main.js",
   "scripts": {
-    "start": "node backend/server.js",
+    "start": "node --env-file-if-exists=.env backend/server.js",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "create-user": "node backend/utils/createUser.js"
+    "create-user": "node --env-file-if-exists=.env backend/utils/createUser.js"
   },
   "repository": {
     "type": "git",
