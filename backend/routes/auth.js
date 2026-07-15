@@ -1,7 +1,8 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import db from '../../DB/db.js';
-import { checkAuth } from '../middleware/auth.js';
+import { checkAuth } from '../middleware/auth.js'
+import { assinarToken } from '../utils/jwt.js';
 
 const router = express.Router();
 
@@ -30,8 +31,14 @@ router.post('/login', async (req, res) => {
     await db.prepare('UPDATE usuarios SET ultimo_login = ? WHERE id = ?')
       .run(new Date().toISOString(), usuario.id);
 
-    req.session.userId = usuario.id;
-    req.session.username = usuario.username;
+    const token = assinarToken({ userId: usuario.id, username: usuario.username })
+    
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+    })
 
     res.json({
       sucesso: true,
@@ -48,14 +55,13 @@ router.post('/login', async (req, res) => {
 
 // POST /api/auth/logout
 router.post('/logout', (req, res) => {
-  req.session.destroy((erro) => {
-    if (erro) {
-      return res.status(500).json({ erro: 'Erro ao fazer logout' });
-    }
-    res.clearCookie('sessionId');
-    res.json({ sucesso: true });
-  });
-});
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none'
+  })
+  res.json({ sucesso: true })
+})
 
 // GET /api/auth/status
 router.get('/status', checkAuth, (req, res) => {

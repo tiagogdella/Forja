@@ -1,23 +1,23 @@
 import express from "express";
 import db, { initDB } from "../DB/db.js";
 import { calcularVolume1RM } from "./logic/ProgressiveLogic.js";
-import { sessionMiddleware } from './middleware/session.js';
 import { requireAuth } from './middleware/auth.js';
 import authRoutes from './routes/auth.js';
 import cors from "cors";
+import cookieParser from 'cookie-parser';
 
 const app = express();
 app.use(express.json());
+app.use(cookieParser())
 app.use(cors({
   origin: "https://tiagogdella.github.io",
   credentials: true
 }));
 app.use(express.static("docs"));
-app.use(sessionMiddleware);
 app.use('/api/auth', authRoutes);
 
 /* =========================
-   TREINOS (Templates)
+   TREINOS (Templates) 
 ========================= */
 app.patch('/api/treinos/:id/ativo', requireAuth, async (req, res) => {
   const { ativo } = req.body
