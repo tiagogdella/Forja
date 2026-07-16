@@ -1,0 +1,1 @@
+var e=``+new URL(`../IMG/forja-icon-dark.svg`,import.meta.url).href;export{e as t};

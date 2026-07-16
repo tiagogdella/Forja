@@ -20,16 +20,40 @@ Backlog de melhorias e mudanças futuras do projeto. Cada seção é uma frente 
 - [x] `backend/routes/auth.js` — `POST /login`: em vez de `req.session.userId = ...`, assinar o JWT e setar via `res.cookie('token', jwt, { httpOnly: true, secure: true, sameSite: 'none', maxAge: ... })`
 - [x] `backend/routes/auth.js` — `POST /logout`: trocar `req.session.destroy()` por `res.clearCookie('token', ...)`
 - [x] `backend/routes/auth.js` — `GET /status`: não precisou mexer, a rota só lê `req.user`, quem monta isso é o middleware (item abaixo)
-- [ ] Adicionar `cookie-parser` (dependência que faltava no plano original — sem ela `req.cookies` não existe, e o middleware de auth precisa ler o cookie `token`)
-- [ ] `backend/middleware/auth.js` — reescrever `requireAuth` e `checkAuth` pra verificar o JWT do cookie (com `jwt.verify`) em vez de `req.session.userId`, mantendo a consulta `usuarios WHERE id = ? AND ativo = 1` (ver trade-off acima)
-- [ ] `backend/server.js` — remover o `sessionMiddleware` (não precisa mais de `express-session`/`memorystore`)
-- [ ] Remover dependências `express-session` e `memorystore` do `package.json` depois que tudo estiver migrado e testado
-- [ ] Testar fluxo completo: login → navegar entre telas → esperar o Render hibernar (ou forçar restart) → confirmar que continua autenticado sem precisar logar de novo
-- [ ] Testar especificamente no iPhone (motivo original do problema) por alguns dias
+- [x] Adicionar `cookie-parser` (dependência que faltava no plano original — sem ela `req.cookies` não existe, e o middleware de auth precisa ler o cookie `token`)
+- [x] `backend/middleware/auth.js` — reescrever `requireAuth` e `checkAuth` pra verificar o JWT do cookie (com `jwt.verify`) em vez de `req.session.userId`, mantendo a consulta `usuarios WHERE id = ? AND ativo = 1` (ver trade-off acima)
+- [x] `backend/server.js` — remover o `sessionMiddleware` (não precisa mais de `express-session`/`memorystore`)
+- [x] Remover dependências `express-session` e `memorystore` do `package.json` depois que tudo estiver migrado e testado
+- [ ] Testar fluxo completo: login → navegar entre telas → forçar restart do Render → confirmar que continua autenticado sem precisar logar de novo
+- [x] Testar especificamente no iPhone — funcionou depois de descobrir e corrigir o gotcha abaixo
 - [ ] Testar cenário de usuário desativado (`ativo = 0`) — confirmar que ainda derruba o acesso na próxima request, não só no próximo login
+
+**Gotcha descoberto durante o teste no iPhone:** o cookie com o JWT não persistia no app "Adicionado à Tela de Início" (falhava em minutos, não por expiração). Causa: frontend (`tiagogdella.github.io`) e backend (`onrender.com`) são domínios diferentes, então o `Set-Cookie` do backend é um cookie *cross-site* do ponto de vista do Safari — e o iOS (Intelligent Tracking Prevention) bloqueia/restringe isso agressivamente, ainda mais dentro do contexto standalone de um web app na tela de início. Fix aplicado: acessar o app pela própria URL do Render (que já serve o frontend estático via `express.static("docs")`) em vez da URL do GitHub Pages — isso torna o cookie first-party (mesmo domínio) e a restrição do Safari deixa de se aplicar. **Consequência prática: o link "oficial" do app agora é a URL do Render, não mais o GitHub Pages.**
 
 ---
 
-## 2. (placeholder pra próximas frentes)
+## 2. Tela de registro (self-service signup)
+
+**Por quê:** hoje, todo usuário novo (ex: o Ramon) precisa ser criado na mão via `npm run create-user` (CLI interativa, só eu consigo rodar porque só eu tenho acesso ao `.env`/Turso). A ideia é ter uma tela de "criar conta" no próprio app, pra ele não depender de mim toda vez.
+
+**Decidido:** registro aberto, sem código de convite nem trava nenhuma — qualquer um com o link consegue criar conta.
+
+**Decidido:** auto-login — ao criar a conta, a rota já assina o JWT e emite o cookie na hora, sem precisar passar pela tela de login em seguida.
+
+### Passos
+
+- [x] Definir as regras de validação (reaproveitar as que já existem no `createUser.js`: username único com 3+ caracteres, senha 6+ caracteres)
+- [x] Criar rota `POST /api/auth/register` em `backend/routes/auth.js`: valida, confere unicidade (`COLLATE NOCASE`), faz hash da senha com `bcrypt` (igual ao `createUser.js` e ao login), insere em `usuarios`, e já emite o cookie JWT (auto-login)
+- [x] Criar `src/views/RegisterView.vue`: campos usuário, nome completo (opcional), senha, confirmar senha — com validação no frontend também (senha == confirmar senha, tamanhos mínimos) antes de bater na API
+- [x] Adicionar rota `/registro` em `src/router/index.js`
+- [x] Adicionar link "Criar conta" na `LoginView.vue`, e um link de volta ("Já tenho conta") na tela de registro
+- [x] Testar localmente: username curto/senha curta rejeitados, duplicado (inclusive ignorando maiúsculas) rejeitado com 409, criação bem-sucedida emite cookie JWT correto
+- [ ] Testar em produção pelo navegador (o teste local cobriu a API, falta o fluxo completo pela `RegisterView.vue` de verdade)
+- [ ] Recriar o usuário do Ramon pela tela nova (o cadastro dele nunca chegou a ser feito pela CLI — e o teste local acidentalmente criou e apagou um "ramon" de teste com senha fraca, então não existe nenhum "ramon" no banco agora)
+- [ ] (opcional, não bloqueante) Considerar rate limit básico na rota de registro, já que fica exposta publicamente sem nenhuma trava hoje
+
+---
+
+## 3. (placeholder pra próximas frentes)
 
 Vamos adicionando aqui conforme surgirem — próximas ideias, bugs conhecidos, features.
