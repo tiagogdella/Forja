@@ -40,11 +40,12 @@
                     {{ carregando ?  'Entrando...' : 'Entrar' }}
                 </button>
             </form>
-            </div>
 
-            <p class="text-center mt-3">
-                <router-link to="/registro">Criar conta</router-link>
+            <p class="text-center mt-3 pt-3" style="border-top: 1px solid var(--line); color: var(--muted);">
+                Ainda não tem conta?
+                <router-link to="/registro" style="color: var(--accent); font-weight: 600;">Criar conta</router-link>
             </p>
+            </div>
         </div>
         </div>
     </div>
