@@ -474,7 +474,7 @@ a:hover {
 
 .focus-mode .navbar-brand,
 .focus-mode .wordmark {
-  color: var(--d-ink);
+  color: var(--d-ink) !important;
 }
 
 .focus-mode h1,

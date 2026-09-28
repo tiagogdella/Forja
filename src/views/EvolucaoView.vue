@@ -44,7 +44,7 @@
       <a href="#" @click.prevent="$router.push('/')"
         class="btn btn-outline-secondary"
         style="min-height: 44px; display: inline-flex; align-items: center;">
-        &lt; Voltar para treinos
+        Voltar
       </a>
     </div>
   </div>
