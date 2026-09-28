@@ -2,6 +2,8 @@
 
 Backlog de melhorias e mudanças futuras do projeto. Cada seção é uma frente de trabalho; vamos riscando os itens conforme forem implementados.
 
+**28/09/2026**: a branch `refactor/arquitetura-camadas` (Fases 1-6 abaixo) foi mesclada e publicada em `main` — JWT, registro, arquitetura em camadas, dashboard novo, tudo está no ar. Deploy confirmado saudável (rotas respondendo certo, sem downtime). O que ainda aparece como `[ ]` abaixo é dívida técnica/teste pendente, não bloqueia nada em produção.
+
 ---
 
 ## 1. Migrar autenticação de sessão de servidor para JWT
