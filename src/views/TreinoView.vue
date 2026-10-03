@@ -77,7 +77,7 @@ import { apiFetch } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { useTerminal } from '@/composables/useTerminal'
 import TerminalLog from '@/components/TerminalLog.vue'
-import { salvarPendente, removerPendente, tentarFinalizar } from '@/services/finalizarPendente'
+import { salvarPendente, removerPendente, tentarFinalizar, reenviarTodosPendentes } from '@/services/finalizarPendente'
 
 export default {
     name: 'TreinoView',
@@ -111,6 +111,10 @@ export default {
         const estadoSalvo = this.carregarEstadoLocal()
 
         try {
+            await reenviarTodosPendentes(() => {
+                this.showSuccess('Um treino pendente foi salvo automaticamente!')
+            })
+
             const res = await apiFetch(`/api/treinos/${this.treinoId}`)
             this.treino = await res.json()
 

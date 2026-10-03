@@ -31,3 +31,19 @@ export async function tentarFinalizar(execucaoId, series) {
     const dados = await res.json()
     return { ok: res.ok, dados }
 }
+
+export async function reenviarTodosPendentes(aoResolver) {
+    const pendentes = listarPendentes()
+
+    for (const p of pendentes) {
+        try {
+            const { ok } = await tentarFinalizar(p.execucaoId, p.series)
+            if (ok) {
+                removerPendente(p.execucaoId)
+                localStorage.removeItem(`treino_estado_${p.treinoId}`)
+                aoResolver?.(p)
+            }
+        } catch (e) {}
+    }
+}
+

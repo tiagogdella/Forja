@@ -189,7 +189,12 @@ Casos-limite resolvidos pela própria matemática, sem `if` especial:
 - [x] Frontend: `finalizarTreino()` (`TreinoView.vue`) monta o payload completo, salva local antes de tentar, manda uma vez só
 - [x] Frontend: `HomeView.vue` — `reenviarPendentes()` roda no `mounted()` antes de `carregarTreinos()`, varre pendências e tenta reenviar sozinho, avisando só quando resolve (silencioso se continuar falhando)
 - [x] `typecheck` + `npm test` + `npm run build` limpos
-- [ ] **Teste manual pendente** (não dá pra automatizar sem navegador real): simular rede ruim de verdade (ex: ativar modo avião no meio do "Finalizar treino"), confirmar que aparece o aviso de que vai tentar de novo, reabrir o app com internet e confirmar que o treino pendente se resolve sozinho com o aviso de sucesso
+- [x] **Teste manual feito** (via túnel HTTPS temporário, `cloudflared`, direto no iPhone, 2026-10-03): modo avião no meio do "Finalizar" → apareceu o aviso de erro certo → reabriu o app com internet → "Um treino pendente foi salvo automaticamente!" apareceu sozinho → conferido que progressão e reps anteriores bateram certinho. Confirmado também (consultando o banco direto) que `data_execucao` é gravada no momento que o treino *começa*, não quando o reenvio automático resolve depois — a data do treino reflete o dia de academia de verdade
+
+**Lacuna encontrada no teste (2026-10-03):** o reenvio automático só roda quando abre a tela inicial (`HomeView.vue`). Se o usuário for direto pro **mesmo treino** de novo antes disso resolver (rede ainda ruim), o app reaproveita o rascunho local apontando pra execução ainda não finalizada, em vez de travar com erro — não é um bug grave (não corrompe nada, a atomicidade do finalizar continua garantindo tudo-ou-nada), mas pode confundir ao tentar começar uma sessão nova de um treino que ainda tem pendência de uma sessão anterior.
+
+- [x] Extraído o laço de reenvio de `HomeView.vue` pra `reenviarTodosPendentes` em `finalizarPendente.js`
+- [x] `TreinoView.vue` também chama essa função logo no início do `mounted()`, antes da checagem de "reaproveita ou cria execução nova" — `typecheck`/`test`/`build` limpos (achamos e corrigimos um erro de nome de import nesse passo — `reenviarPendentes` importado mas `reenviarTodosPendentes` chamado, teria dado `ReferenceError`)
 
 ---
 
