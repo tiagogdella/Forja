@@ -172,6 +172,40 @@ Casos-limite resolvidos pela própria matemática, sem `if` especial:
 
 ---
 
-## 4. (placeholder pra próximas frentes)
+## 4. Finalizar treino resistente a conexão ruim
+
+**Por quê:** investigado em 2026-10-03 (detalhado no `BUGS.md`, seção "Em andamento") — `finalizarTreino()` manda uma requisição de rede por série (até 10 pra um treino de 3x3), sequenciais. Numa rede fraca de academia + app standalone no iPhone, a 1ª falha interrompe o laço inteiro — nenhuma série seguinte chega a ser tentada, mesmo já digitada. Confirmado com dados reais: execuções abandonadas no banco, zero série salva em cada uma, sem relação com cota do Turso (descartada) nem bug geral no backend (testado contra produção, funcionou).
+
+**Decidido:** três camadas, não uma só:
+1. **Backend**: uma rota só recebe a execução inteira (todas as séries de uma vez), insere tudo numa transação — ou salva tudo, ou nada, nunca fica pela metade.
+2. **Frontend — cache de saída**: ao clicar "Finalizar", salva o pacote completo no `localStorage` *antes* de tentar mandar pro servidor.
+3. **Frontend — reenvio automático**: se a requisição falhar, o cache local permanece; toda vez que o app abre (não só na hora do erro), confere se existe pacote pendente e tenta reenviar sozinho, sem o usuário precisar refazer nada.
+
+**Mantém, não substitui:** o autosave de 30s (`salvarEstadoLocal`) continua existindo do jeito que está — resolve perder dado *durante* o preenchimento, antes de finalizar; esse item novo resolve o momento *de finalizar* especificamente. São janelas de falha diferentes (ver `BUGS.md`).
+
+### Passos
+- [ ] Backend: nova forma de `POST /api/execucoes/:id/finalizar` (ou rota nova) aceitar `{ series: [...] }` no corpo, inserir todas as séries + calcular `volume_total` numa transação só (checar se o `@libsql/client` dá pra usar `client.batch()` pra isso, ou envolver `db.js` com um helper de transação)
+- [ ] Frontend: `finalizarTreino()` monta o payload completo e manda uma vez só, em vez do laço atual de POST por série
+- [ ] Frontend: salva o payload completo no `localStorage` (chave por `execucaoId`) antes de tentar enviar; apaga só depois de confirmar sucesso
+- [ ] Frontend: no `mounted()` (de `TreinoView.vue` ou um lugar mais global, tipo `HomeView.vue`/`App.vue`), confere se existe pacote pendente de alguma execução e tenta reenviar automaticamente, com aviso discreto de sucesso quando resolver sozinho
+- [ ] Testar simulando rede ruim (desligar wifi no meio do finalizar) e confirmar que o reenvio automático completa na próxima abertura do app
+
+---
+
+## 5. Lista de treinos demora pra carregar (N+1 de requisições)
+
+**Por quê:** `HomeView.vue` → `carregarTreinos()` busca a lista de treinos e, **pra cada treino, faz uma requisição separada** de progressão, uma de cada vez (`await` dentro de `for`) — com 5 treinos ativos, são 6 idas-e-voltas de rede sequenciais antes da tela aparecer. Não é falta de cache, é excesso de requisição.
+
+**Decidido:** resolver na raiz (calcular a progressão de cada treino já dentro da própria consulta/rota de listar treinos), não cachear local — cache local só esconderia o sintoma na repetição, continuaria lento na primeira carga e depois de cada treino novo, e criaria problema de dado desatualizado entre aparelhos diferentes (Mac + iPhone, por exemplo).
+
+### Passos
+- [ ] `treinoRepository.listarPorUsuario` (ou uma query nova) — calcular a progressão (volume da 1ª vs. última execução finalizada) de cada treino já na mesma consulta, via subquery/join, em vez de uma chamada HTTP por treino
+- [ ] `treinoService`/`treinoController` — expor esse campo já pronto na resposta de `GET /api/treinos`
+- [ ] `HomeView.vue` — remove o laço de requisições extras, usa o campo que já vem pronto
+- [ ] Testar que o tempo de carregamento da lista cai de forma perceptível com vários treinos ativos
+
+---
+
+## 6. (placeholder pra próximas frentes)
 
 Vamos adicionando aqui conforme surgirem — próximas ideias, bugs conhecidos, features.
