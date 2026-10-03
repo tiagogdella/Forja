@@ -40,3 +40,17 @@ export async function listarPorTreino(treinoId, userId){
 
     return execucao;
 }
+
+export async function finalizarComSeries(execucaoId, volumeTotal, series) {
+    const statements = series.map(s => ({
+        sql: "INSERT INTO series (execucao_id, exercicio_id, peso, repeticoes, ordem) VALUES (?, ?, ?, ?, ?)",
+        args: [execucaoId, s.exercicio_id, s.peso, s.repeticoes, s.ordem]
+    }))
+
+    statements.push({
+        sql: "UPDATE execucoes_treino SET volume_total = ? WHERE id = ?",
+        args: [volumeTotal, execucaoId]
+    })
+
+    return db.batch(statements)
+}

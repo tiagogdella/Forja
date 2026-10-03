@@ -127,5 +127,17 @@ export async function initDB() {
   console.log('✓ Banco de dados Turso iniciado');
 }
 
-const db = { prepare };
+/**
+ * Executa varias instrucoes como uma transacao so - ou tudo da certo, ou nada e salvo.
+ * @param {{sql: string, args?: any[]}[]} statements
+ * @returns {Promise<void>}
+ */
+export async function batch(statements) {
+  await client.batch(
+    statements.map(s => ({ sql: s.sql, args: s.args ?? [] })),
+    'write'
+  )
+}
+
+const db = { prepare, batch };
 export default db;

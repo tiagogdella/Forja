@@ -89,6 +89,7 @@ import { apiFetch } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { useTerminal } from '@/composables/useTerminal'
 import TerminalLog from '@/components/TerminalLog.vue'
+import { listarPendentes, tentarFinalizar, removerPendente } from '@/services/finalizarPendente'
 
 export default {
     name: 'HomeView',
@@ -114,10 +115,26 @@ export default {
     },
 
     async mounted() {
+        await this.reenviarPendentes()
         await this.carregarTreinos()
     },
 
     methods: {
+        async reenviarPendentes() {
+            const pendentes = listarPendentes()
+
+            for (const p of pendentes) {
+                try {
+                    const { ok } = await tentarFinalizar(p.execucaoId, p.series)
+                    if (ok) {
+                        removerPendente(p.execucaoId)
+                        localStorage.removeItem(`treino_estado_${p.treinoId}`)
+                        this.showSuccess('Um treino pendente foi salvo automaticamente!')
+                    }
+                } catch (e) {}
+            }
+        },
+
         async carregarTreinos() {
             try {
                 const res = await apiFetch('/api/treinos')

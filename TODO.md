@@ -184,11 +184,12 @@ Casos-limite resolvidos pela própria matemática, sem `if` especial:
 **Mantém, não substitui:** o autosave de 30s (`salvarEstadoLocal`) continua existindo do jeito que está — resolve perder dado *durante* o preenchimento, antes de finalizar; esse item novo resolve o momento *de finalizar* especificamente. São janelas de falha diferentes (ver `BUGS.md`).
 
 ### Passos
-- [ ] Backend: nova forma de `POST /api/execucoes/:id/finalizar` (ou rota nova) aceitar `{ series: [...] }` no corpo, inserir todas as séries + calcular `volume_total` numa transação só (checar se o `@libsql/client` dá pra usar `client.batch()` pra isso, ou envolver `db.js` com um helper de transação)
-- [ ] Frontend: `finalizarTreino()` monta o payload completo e manda uma vez só, em vez do laço atual de POST por série
-- [ ] Frontend: salva o payload completo no `localStorage` (chave por `execucaoId`) antes de tentar enviar; apaga só depois de confirmar sucesso
-- [ ] Frontend: no `mounted()` (de `TreinoView.vue` ou um lugar mais global, tipo `HomeView.vue`/`App.vue`), confere se existe pacote pendente de alguma execução e tenta reenviar automaticamente, com aviso discreto de sucesso quando resolver sozinho
-- [ ] Testar simulando rede ruim (desligar wifi no meio do finalizar) e confirmar que o reenvio automático completa na próxima abertura do app
+- [x] Backend: `POST /api/execucoes/:id/finalizar` passa a aceitar `{ series: [...] }` no corpo — insere todas as séries + calcula `volume_total` numa transação só, via `db.batch()` (`@libsql/client` tem suporte nativo). Rota antiga `POST /execucoes/:id/series` removida (não tem mais uso). Testado contra produção (local, mesmo banco): caminho feliz confirmado (3 séries + volume calculado batendo com a matemática) e atomicidade confirmada (lote com 1 série inválida no meio não salva nenhuma, nem as válidas — tudo ou nada de verdade)
+- [x] `src/services/finalizarPendente.js` (novo) — `salvarPendente`/`removerPendente`/`listarPendentes` (localStorage, varre por prefixo pra pegar múltiplos pendentes) + `tentarFinalizar` (chama o endpoint novo)
+- [x] Frontend: `finalizarTreino()` (`TreinoView.vue`) monta o payload completo, salva local antes de tentar, manda uma vez só
+- [x] Frontend: `HomeView.vue` — `reenviarPendentes()` roda no `mounted()` antes de `carregarTreinos()`, varre pendências e tenta reenviar sozinho, avisando só quando resolve (silencioso se continuar falhando)
+- [x] `typecheck` + `npm test` + `npm run build` limpos
+- [ ] **Teste manual pendente** (não dá pra automatizar sem navegador real): simular rede ruim de verdade (ex: ativar modo avião no meio do "Finalizar treino"), confirmar que aparece o aviso de que vai tentar de novo, reabrir o app com internet e confirmar que o treino pendente se resolve sozinho com o aviso de sucesso
 
 ---
 

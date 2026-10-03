@@ -77,6 +77,7 @@ import { apiFetch } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { useTerminal } from '@/composables/useTerminal'
 import TerminalLog from '@/components/TerminalLog.vue'
+import { salvarPendente, removerPendente, tentarFinalizar } from '@/services/finalizarPendente'
 
 export default {
     name: 'TreinoView',
@@ -247,6 +248,7 @@ export default {
             this.salvando = true
 
             try {
+                const series = []
                 let ordemGlobal = 1
 
                 for (const ex of this.exercicios) {
@@ -258,28 +260,27 @@ export default {
                             return
                         }
 
-                        await apiFetch(`/api/execucoes/${this.execucaoId}/series`, {
-                            method: 'POST',
-                            body: JSON.stringify({
-                                exercicio_id: ex.id,
-                                peso: parseFloat(serie.peso),
-                                repeticoes: parseInt(serie.reps),
-                                ordem: ordemGlobal
-                            })
+                        series.push({
+                            exercicio_id: ex.id,
+                            peso: parseFloat(serie.peso),
+                            repeticoes: parseInt(serie.reps),
+                            ordem: ordemGlobal
                         })
                         ordemGlobal ++
                     }
                 }
 
-                const resFinal = await apiFetch(`/api/execucoes/${this.execucaoId}/finalizar`, {method: 'POST'})
-                const resultado = await resFinal.json()
+                salvarPendente(this.execucaoId, this.treinoId, series)
 
-                if (!resFinal.ok) {
-                    this.showError(resultado.erro || 'Erro ao finalizar treino')
+                const { ok, dados: resultado } = await tentarFinalizar(this.execucaoId, series)
+
+                if (!ok) {
+                    this.showError((resultado.erro || 'Erro ao finalizar treino') + ' — vamos tentar de novo sozinhos na próxima vez que o app abrir.')
                     this.salvando = false
                     return
                 }
 
+                removerPendente(this.execucaoId)
                 localStorage.removeItem(`treino_estado_${this.treinoId}`)
 
                 const resProgressao = await apiFetch(`/api/treinos/${this.treinoId}/progressao`)

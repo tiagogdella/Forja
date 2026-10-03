@@ -22,17 +22,8 @@ export async function buscarUltimo(req, res){
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
-export async function adicionarSerie(req, res){
-    const added = await execucaoService.adicionarSerie(req.params.id, req.user.id, req.body);
-    return res.json({ sucesso: true });
-}
-
-/**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- */
 export async function finalizar(req, res){
-    const finalized = await execucaoService.finalizar(req.params.id, req.user.id);
+    const finalized = await execucaoService.finalizar(req.params.id, req.user.id, req.body.series);
     return res.json({sucesso: true, ...finalized});
 }
 

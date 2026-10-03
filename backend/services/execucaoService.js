@@ -41,30 +41,23 @@ export async function buscarUltimo(treinoId, userId) {
     return {existe: true, data: exec.data_execucao, volume_total: exec.volume_total, series_por_exercicio: Object.values(seriesPorExercicio)};
 }
 
-export async function finalizar(execucaoId, userId){
+export async function finalizar(execucaoId, userId, series){
     const exec = await execucaoRepository.buscarPorId(execucaoId);
     if(!exec || exec.user_id !== userId) throw new NotFoundError("Execução não encontrada");
 
-    const series = await seriesRepository.listarPorExecucao(exec.id);
-    if (series.length === 0) throw new ValidationError("Execução sem séries");
+    if (!Array.isArray(series) || series.length === 0) throw new ValidationError("Execução sem séries");
+
+    for (const s of series) {
+        if (s.exercicio_id == null || s.peso == null || s.repeticoes == null || s.ordem == null) {
+            throw new ValidationError("Série sem dados");
+        }
+    }
 
     const volumeTotal = calcularVolume1RM(series);
 
-    await execucaoRepository.atualizarVolumeTotal(exec.id, volumeTotal);
+    await execucaoRepository.finalizarComSeries(execucaoId, volumeTotal, series);
 
     return { volume_total: volumeTotal };
-}
-
-export async function adicionarSerie(execucaoId, userId, dados) {
-    const exec = await execucaoRepository.buscarPorId(execucaoId);
-    if (!exec || exec.user_id !== userId) throw new NotFoundError("Execução não encontrada");
-
-    if (dados.exercicio_id == null || dados.peso == null || dados.repeticoes == null || dados.ordem == null) throw new ValidationError("Serie sem dados")
-
-    const added = await seriesRepository.criar(execucaoId, dados.exercicio_id, dados.peso, dados.repeticoes, dados.ordem);
-
-    return added;
-
 }
 
 export async function obterComSeries(execucaoId, userId) {
