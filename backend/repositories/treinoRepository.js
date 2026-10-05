@@ -9,7 +9,9 @@ export async function listarPorUsuario(userId) {
         t.data_criacao,
         t.ativo,
         COUNT(DISTINCT CASE WHEN e.volume_total IS NOT NULL THEN e.id END) as total_execucoes,
-        MAX(CASE WHEN e.volume_total IS NOT NULL THEN e.data_execucao END) as ultima_execucao
+        MAX(CASE WHEN e.volume_total IS NOT NULL THEN e.data_execucao END) as ultima_execucao,
+        (SELECT volume_total FROM execucoes_treino WHERE treino_id = t.id AND volume_total IS NOT NULL ORDER BY data_execucao ASC LIMIT 1) as volume_base,
+        (SELECT volume_total FROM execucoes_treino WHERE treino_id = t.id AND volume_total IS NOT NULL ORDER BY data_execucao DESC LIMIT 1) as volume_atual
       FROM treinos t
       LEFT JOIN execucoes_treino e ON e.treino_id = t.id
       WHERE t.user_id = ?
@@ -18,6 +20,7 @@ export async function listarPorUsuario(userId) {
     `).all(userId);
     return treinos;
 }
+
 
 export async function buscarPorId(id) {
     const treino = await db.prepare("SELECT * FROM treinos WHERE id = ?").get(id);

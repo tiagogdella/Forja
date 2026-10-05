@@ -205,10 +205,11 @@ Casos-limite resolvidos pela própria matemática, sem `if` especial:
 **Decidido:** resolver na raiz (calcular a progressão de cada treino já dentro da própria consulta/rota de listar treinos), não cachear local — cache local só esconderia o sintoma na repetição, continuaria lento na primeira carga e depois de cada treino novo, e criaria problema de dado desatualizado entre aparelhos diferentes (Mac + iPhone, por exemplo).
 
 ### Passos
-- [ ] `treinoRepository.listarPorUsuario` (ou uma query nova) — calcular a progressão (volume da 1ª vs. última execução finalizada) de cada treino já na mesma consulta, via subquery/join, em vez de uma chamada HTTP por treino
-- [ ] `treinoService`/`treinoController` — expor esse campo já pronto na resposta de `GET /api/treinos`
-- [ ] `HomeView.vue` — remove o laço de requisições extras, usa o campo que já vem pronto
-- [ ] Testar que o tempo de carregamento da lista cai de forma perceptível com vários treinos ativos
+- [x] `treinoRepository.listarPorUsuario` — duas subconsultas (`volume_base`/`volume_atual`, primeira e última execução finalizada por treino) direto na query principal, em vez de uma chamada HTTP por treino depois
+- [x] `treinoService.listar` — calcula `progressao` (mesma fórmula de `execucaoService.progressao()`) a partir de `volume_base`/`volume_atual`, já embutido na resposta de `GET /api/treinos`. `treinoController` não precisou mudar (só repassa o que o service devolve)
+- [x] `HomeView.vue` — removido o laço de requisições extras; `carregarTreinos()` só busca `/api/treinos` e usa `treino.progressao`, que já vem pronto
+- [x] Testado contra produção (conta de teste descartável) com 3 cenários — 2 execuções (base→atual, +50%), 1 execução só (0%, sem precisar de tratamento especial — mesma matemática de sempre) e nenhuma execução (`null`) — os 3 bateram exatos
+- [x] **Medido o ganho, com ressalva honesta**: localmente (mesmo servidor, mesmo Turso) a diferença é pequena (423ms → 358ms com 5 treinos) porque `localhost` não tem a latência de rede cliente-servidor que existe de verdade em produção — só sobra o round-trip até o Turso. Contra o Render publicado, cada chamada individual mede ~0,5s (dominado por rede + processamento do Render, não pelo banco) — com 5 treinos ativos isso projeta pra **~3s (6 chamadas) → ~0,5s (1 chamada)**. Ganho real só confirmável depois do deploy; é o que o usuário relatou sentir no dia a dia (viu na aba Network do navegador várias chamadas de `/progressao` em sequência)
 
 ---
 

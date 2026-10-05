@@ -2,9 +2,17 @@ import { NotFoundError, ValidationError } from "../errors/AppError.js";
 import { listarPorUsuario, criar as criarTreino, vincularExercicio, buscarPorId, buscarExerciciosDoTreino, atualizarAtivo as atualizarAtivoTreino, atualizarNome as atualizarNomeTreino, removerPorId, buscarUltimaOrdem } from "../repositories/treinoRepository.js";
 import *as exercicioRepository from "../repositories/exercicioRepository.js";
 
-export function listar(userId) {
-    return listarPorUsuario(userId);
+export async function listar(userId) {
+    const treinos = await listarPorUsuario(userId);
+
+    return treinos.map(({ volume_base, volume_atual, ...resto }) => ({
+        ...resto,
+        progressao: (volume_base != null && volume_atual != null)
+            ? parseFloat((((volume_atual - volume_base) / volume_base) * 100).toFixed(2))
+            : null
+    }));
 }
+
 
 export async function criar(userId, { nome, exercicios }) {
     if (!nome || nome.trim() === "") throw new ValidationError("Invalid name");

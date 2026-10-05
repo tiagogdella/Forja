@@ -129,19 +129,7 @@ export default {
         async carregarTreinos() {
             try {
                 const res = await apiFetch('/api/treinos')
-                const lista = await res.json()
-
-                for(const treino of lista) {
-                    try {
-                        const resP = await apiFetch(`/api/treinos/${treino.id}/progressao`)
-                        const progressao = await resP.json()
-                        treino.progressao = progressao.progresso_percentual
-                    } catch (e) {
-                        treino.progressao = null
-                    }
-                }
-
-                this.treinos = lista
+                this.treinos = await res.json()
             } catch (e) {
                 this.showError('Error ao carregar treinos: ' + e.message)
             }
